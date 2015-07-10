@@ -1,4 +1,5 @@
-## jsonmon: a quick and simple monitoring and alerting system
+# jsonmon
+## Quick and simple monitoring and alerting system
 
 ### Features
 
