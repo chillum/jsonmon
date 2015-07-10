@@ -27,12 +27,10 @@ var alert = function(mail, subject, message) {
       rcpt = mail;
     }
     send({
+      from: 'jsonmon <no-reply>',
       to: rcpt,
       subject: subject,
       content: message
-    }, function(error, info){
-      if (error)
-        console.warn(error);
     });
   }
   console.log(subject); // And log them.
