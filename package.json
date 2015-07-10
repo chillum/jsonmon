@@ -1,0 +1,17 @@
+{
+  "name": "jsonmon",
+  "version": "0.9.0",
+  "description": "Quick and simple monitoring and alerting system",
+  "license": "Apache-2.0",
+  "author": "Vasily Korytov <vasily.korytov@yandex.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chillum/jsonmon.git"
+  },
+  "dependencies": {
+    "dateformat": "~1",
+    "hapi": "~8",
+    "js-yaml": "~3",
+    "sendmail": "~0"
+  }
+}
