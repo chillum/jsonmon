@@ -1,6 +1,6 @@
 {
   "name": "jsonmon",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Quick and simple monitoring and alerting system",
   "homepage": "https://github.com/chillum/jsonmon/wiki",
   "license": "Apache-2.0",

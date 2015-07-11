@@ -18,21 +18,24 @@ try {
 
 // Global failed/succeeded maps.
 var failed = {}, ok = {};
-
+// Sendmail transport.
 var send = mailer.createTransport(sendmail({path: '/usr/sbin/sendmail'}));
 
 var alert = function(mail, subject, message) {
   var rcpt;
-  if (mail) { // Send alerts by mail.
-    if (Array.isArray(mail)) {
+  if (mail) {
+    if (Array.isArray(mail))
       rcpt = mail.join(', ');
-    } else {
+    else
       rcpt = mail;
-    }
-    send.SendMail({
+    // Send alerts by mail.
+    send.sendMail({
       to: rcpt,
       subject: subject,
       text: message
+    }, function(error){
+      if (error)
+        console.warn(error);
     });
   }
   console.log(subject); // And log them.
