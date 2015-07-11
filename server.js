@@ -1,11 +1,12 @@
-var fs     = require('fs'),
-    yaml   = require('js-yaml'),
-    format = require('dateformat'),
-    run    = require('child_process').exec,
-    http   = require('http'),
-    https  = require('https'),
-    send   = require('sendmail')(),
-    Hapi   = require('hapi');
+var fs       = require('fs'),
+    yaml     = require('js-yaml'),
+    format   = require('dateformat'),
+    run      = require('child_process').exec,
+    http     = require('http'),
+    https    = require('https'),
+    mailer   = require('nodemailer'),
+    sendmail = require('nodemailer-sendmail-transport'),
+    Hapi     = require('hapi');
 
 // Get config or throw exception on error.
 try {
@@ -18,6 +19,8 @@ try {
 // Global failed/succeeded maps.
 var failed = {}, ok = {};
 
+var send = mailer.createTransport(sendmail({path: '/usr/sbin/sendmail'}));
+
 var alert = function(mail, subject, message) {
   var rcpt;
   if (mail) { // Send alerts by mail.
@@ -26,11 +29,10 @@ var alert = function(mail, subject, message) {
     } else {
       rcpt = mail;
     }
-    send({
-      from: 'jsonmon <no-reply>',
+    send.SendMail({
       to: rcpt,
       subject: subject,
-      content: message
+      text: message
     });
   }
   console.log(subject); // And log them.

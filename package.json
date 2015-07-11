@@ -13,6 +13,7 @@
     "dateformat": "~1",
     "hapi": "~8",
     "js-yaml": "~3",
-    "sendmail": "~0"
+    "nodemailer": "~1",
+    "nodemailer-sendmail-transport": "~1"
   }
 }
