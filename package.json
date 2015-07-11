@@ -2,6 +2,7 @@
   "name": "jsonmon",
   "version": "0.9.0",
   "description": "Quick and simple monitoring and alerting system",
+  "homepage": "https://github.com/chillum/jsonmon/wiki",
   "license": "Apache-2.0",
   "author": "Vasily Korytov <vasily.korytov@yandex.com>",
   "repository": {
