@@ -1,0 +1,14 @@
+[Unit]
+
+[Service]
+WorkingDirectory = /home/jsonmon/jsonmon
+User             = jsonmon
+ExecStart        = /usr/bin/node server.js
+Restart          = always
+
+# The JSON API host & port:
+#Environment=HOST=localhost
+#Environment=PORT=3000
+
+[Install]
+WantedBy  = default.target
