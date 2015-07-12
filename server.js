@@ -23,6 +23,7 @@ var failed = {}, ok = {};
 // Sendmail transport.
 var send = mailer.createTransport(sendmail({path: '/usr/sbin/sendmail'}));
 
+// Logs and mail alerting.
 var alert = function(mail, subject, message) {
   var rcpt;
   if (mail) {
@@ -44,6 +45,7 @@ var alert = function(mail, subject, message) {
   if (message) console.log(message);
 };
 
+// Mark Web check as failed.
 var fail = function(name, url, notify, message) {
   if (!failed[url]) failed[url] = format(Date.now(), 'isoDateTime');
   if (ok[url]) {
@@ -69,6 +71,7 @@ var check = function(name, url, req, notify, tries) {
   req.socket.destroy();
 };
 
+// Check the HTTP URL in several tries.
 var fetch_http = function(name, url, notify, tries) {
   http.get(url, function(res) {
     check(name, url, res, notify, tries);
@@ -80,6 +83,7 @@ var fetch_http = function(name, url, notify, tries) {
   });
 };
 
+// Check the HTTPS URL in several tries.
 var fetch_https = function(name, url, notify, tries) {
   https.get(url, function(res) {
     check(name, url, res, notify, tries);
@@ -150,6 +154,7 @@ server.connection({
   port: (process.env.PORT || '3000')
 });
 
+// Format JSON for output.
 var display = function(i) {
   var o = {};
   if (i.name)
