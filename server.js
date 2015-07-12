@@ -1,3 +1,5 @@
+'use strict';
+
 var fs       = require('fs'),
     yaml     = require('js-yaml'),
     format   = require('dateformat'),
