@@ -51,12 +51,12 @@ var fail = function(name, url, notify, message) {
 };
 
 // Fail if HTTP status code is not 200.
-var check = function(name, url, http, notify, tries) {
-  if (http.statusCode !== 200) {
+var check = function(name, url, req, notify, tries) {
+  if (req.statusCode !== 200) {
     if (tries)
-      check(name, url, http, notify, tries - 1);
+      check(name, url, req, notify, tries - 1);
     else
-      fail(name, url, notify, 'Error: ' + url + ' returned ' + http.statusCode);
+      fail(name, url, notify, 'Error: ' + url + ' returned ' + req.statusCode);
   } else {
     if (failed[url]) {
       delete failed[url];
@@ -64,7 +64,7 @@ var check = function(name, url, http, notify, tries) {
       alert(notify, 'FIXED: ' + (name || url));
     }
   }
-  http.socket.destroy();
+  req.socket.destroy();
 };
 
 var fetch_http = function(name, url, notify, tries) {
@@ -100,14 +100,14 @@ var web = function(name, url, notify, repeat) {
     fail(name, url, notify, 'Error: ' + url + ' is not a valid HTTP(S) URL');
     return;
   }
-  setTimeout(function () {
+  setTimeout(function() {
     web(name, url, notify, repeat);
   }, repeat * 1000);
 };
 
 // Shell worker.
 var exec = function(name, cmd, notify, repeat) {
-  run(cmd, function (error, stdout, stderr) {
+  run(cmd, function(error, stdout, stderr) {
     if (error !== null) {
       if (!failed[cmd]) failed[cmd] = format(Date.now(), 'isoDateTime');
       if (ok[cmd]) {
@@ -121,7 +121,7 @@ var exec = function(name, cmd, notify, repeat) {
         alert(notify, 'FIXED: ' + (name || cmd));
       }
     }
-    setTimeout(function () {
+    setTimeout(function() {
       exec(name, cmd, notify, repeat);
     }, repeat);
   });

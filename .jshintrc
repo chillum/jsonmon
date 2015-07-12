@@ -1,0 +1,8 @@
+// -*- js -*-
+{
+  "node":          true,
+  "futurehostile": true,
+  "undef":         true,
+  "latedef":       true,
+  "shadow":        "outer"
+}
