@@ -144,11 +144,13 @@ func shell(check *Check) {
 	if out, err := exec.Command("sh", "-c", check.Shell).Output(); err != nil {
 		if !check.Failed {
 			check.Failed = true
+			check.Since = time.Now().Format(time.RFC3339)
 			alert(&check.Notify, "FAILED: "+name, strings.TrimSpace(string(out)))
 		}
 	} else {
 		if check.Failed {
 			check.Failed = false
+			check.Since = time.Now().Format(time.RFC3339)
 			alert(&check.Notify, "FIXED: "+name, "")
 		}
 	}
@@ -170,13 +172,13 @@ func web(check *Check) {
 	if err != nil {
 		if !check.Failed {
 			check.Failed = true
-			// TODO: check.Since
+			check.Since = time.Now().Format(time.RFC3339)
 			alert(&check.Notify, "FAILED: "+name, err.Error())
 		}
 	} else {
 		if check.Failed {
 			check.Failed = false
-			// TODO: check.Since
+			check.Since = time.Now().Format(time.RFC3339)
 			alert(&check.Notify, "FIXED: "+name, "")
 		}
 	}
