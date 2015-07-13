@@ -15,5 +15,8 @@
     "js-yaml": "~3",
     "nodemailer": "~1",
     "nodemailer-sendmail-transport": "~1"
+  },
+  "scripts": {
+    "start": "node --harmony server.js"
   }
 }
