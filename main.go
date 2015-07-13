@@ -230,4 +230,5 @@ func display(w http.ResponseWriter, r *http.Request) {
 	json, _ := json.MarshalIndent(&checks, "", "  ")
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(json)
+	fmt.Fprintln(w, "") // Trailing newline.
 }
