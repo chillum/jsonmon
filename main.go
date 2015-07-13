@@ -19,6 +19,7 @@ Environment:
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	flag "github.com/ogier/pflag"
 	"gopkg.in/yaml.v2"
@@ -37,14 +38,18 @@ const Version = "0.9.3"
 
 // Check details
 type Check struct {
-	Name   string `json:"name" yaml:"name"`
-	Web    string `json:"web" yaml:"web"`
-	Shell  string `json:"shell" yaml:"shell"`
-	Notify string `yaml:"notify"`
-	Repeat int    `yaml:"repeat"`
-	Failed bool   `json:"failed"`
-	Since  string `json:"since"`
+	Name   string `json:"name,omitempty" yaml:"name"`
+	Web    string `json:"web,omitempty" yaml:"web"`
+	Shell  string `json:"shell,omitempty" yaml:"shell"`
+	Notify string `json:"-" yaml:"notify"`
+	Repeat int    `json:"-" yaml:"repeat"`
+	Failed bool   `json:"failed" yaml:"-"`
+	Since  string `json:"since,omitempty" yaml:"-"`
 }
+
+// Global checks list.
+// Need to share it with workers and Web UI.
+var checks []Check
 
 // The main loop.
 func main() {
@@ -78,7 +83,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(3)
 	}
-	var checks []Check
 	err = yaml.Unmarshal(yml, &checks)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", config[0], err)
@@ -88,23 +92,39 @@ func main() {
 	// Run checks.
 	var wg sync.WaitGroup
 	wg.Add(1)
-	for _, check := range checks {
-		go worker(check)
+	for i := range checks {
+		go worker(&checks[i])
 	}
-	// TODO: Launch the JSON API.
+
+	// Launch the JSON API.
+	host := os.Getenv("HOST")
+	port := os.Getenv("PORT")
+	if host == "" {
+		host = "localhost"
+	}
+	if port == "" {
+		port = "3000"
+	}
+	http.HandleFunc("/", display)
+	err = http.ListenAndServe(host+":"+port, nil)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "ERROR:", err)
+	}
+
+	// Wait forever.
 	wg.Wait()
 }
 
-func worker(check Check) {
+func worker(check *Check) {
 	for {
 		if check.Repeat == 0 { // Set default timeout.
 			check.Repeat = 60
 		}
 		if check.Web != "" {
-			web(&check)
+			web(check)
 		}
 		if check.Shell != "" {
-			shell(&check)
+			shell(check)
 		}
 		time.Sleep(time.Second * time.Duration(check.Repeat))
 	}
@@ -150,11 +170,13 @@ func web(check *Check) {
 	if err != nil {
 		if !check.Failed {
 			check.Failed = true
+			// TODO: check.Since
 			alert(&check.Notify, "FAILED: "+name, err.Error())
 		}
 	} else {
 		if check.Failed {
 			check.Failed = false
+			// TODO: check.Since
 			alert(&check.Notify, "FIXED: "+name, "")
 		}
 	}
@@ -171,4 +193,11 @@ func alert(mail *string, subject string, message string) {
 	if message != "" {
 		fmt.Println(message)
 	}
+}
+
+// Format JSON for output.
+func display(w http.ResponseWriter, r *http.Request) {
+	json, _ := json.MarshalIndent(&checks, "", "  ")
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(json)
 }
