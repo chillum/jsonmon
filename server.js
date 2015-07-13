@@ -10,18 +10,12 @@ const fs       = require('fs'),
       sendmail = require('nodemailer-sendmail-transport'),
       Hapi     = require('hapi');
 
-// Get config or throw exception on error.
-try {
-  var checks = yaml.safeLoad(fs.readFileSync('config.yml', 'utf8'));
-} catch (e) {
-  console.warn(e);
-  process.exit(1);
-}
-
 // Global failed/succeeded maps.
 var failed = {}, ok = {};
 // Sendmail transport.
 const send = mailer.createTransport(sendmail({path: '/usr/sbin/sendmail'}));
+// The JSON API.
+const server = new Hapi.Server();
 
 // Logs and mail alerting.
 const alert = function(mail, subject, message) {
@@ -133,27 +127,6 @@ const exec = function(name, cmd, notify, repeat) {
   });
 };
 
-// The main loop.
-checks.forEach(function(i) {
-  if (!i.repeat)
-    i.repeat = 60;
-  if (i.web) {
-    ok[i.web] = true;
-    web(i.name, i.web, i.notify, i.repeat);
-  }
-  if (i.shell) {
-    ok[i.shell] = true;
-    exec(i.name, i.shell, i.notify, i.repeat);
-  }
-});
-
-// The JSON API.
-const server = new Hapi.Server();
-server.connection({
-  host: (process.env.HOST || 'localhost'),
-  port: (process.env.PORT || '3000')
-});
-
 // Format JSON for output.
 const display = function(i) {
   let o = {};
@@ -184,16 +157,47 @@ const display = function(i) {
   return o;
 };
 
-server.route({
-  method: 'GET',
-  path: '/',
-  handler: function(request, reply) {
-    let result = [];
-    checks.forEach(function(i) {
-      result.push(display(i));
-    });
-    reply(JSON.stringify(result, null, 2)).header('Content-type', 'application/json');
+// The main loop.
+const main = function() {
+  var checks;
+  // Get config or throw exception on error.
+  try {
+    checks = yaml.safeLoad(fs.readFileSync('config.yml', 'utf8'));
+  } catch (e) {
+    console.warn(e);
+    process.exit(1);
   }
-});
+ 
+  // Run checks.
+  checks.forEach(function(i) {
+    if (!i.repeat)
+      i.repeat = 60;
+    if (i.web) {
+      ok[i.web] = true;
+      web(i.name, i.web, i.notify, i.repeat);
+    }
+    if (i.shell) {
+      ok[i.shell] = true;
+      exec(i.name, i.shell, i.notify, i.repeat);
+    }
+  });
 
-server.start();
+  // Launch the JSON API.
+  server.connection({
+    host: (process.env.HOST || 'localhost'),
+    port: (process.env.PORT || '3000')
+  });
+  server.route({
+    method: 'GET',
+    path: '/',
+    handler: function(request, reply) {
+      let result = [];
+      checks.forEach(function(i) {
+        result.push(display(i));
+      });
+      reply(JSON.stringify(result, null, 2)).header('Content-type', 'application/json');
+    }
+  });
+  server.start();
+};
+main();
