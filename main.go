@@ -20,7 +20,7 @@ package main
 
 import (
 	"encoding/json"
-	"path"
+	"errors"
 	"flag"
 	"fmt"
 	"gopkg.in/yaml.v2"
@@ -28,7 +28,9 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -142,7 +144,7 @@ func shell(check *Check) {
 	}
 
 	// Execute with shell.
-	if out, err := exec.Command("sh", "-c", check.Shell).Output(); err != nil {
+	if out, err := exec.Command("/bin/sh", "-c", check.Shell).Output(); err != nil {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
@@ -168,25 +170,32 @@ func web(check *Check) {
 	}
 
 	// Get the URL. TODO: 3 attempts
-	resp, err := http.Get(check.Web)
-
-	if err != nil {
-		if !check.Failed {
-			check.Failed = true
-			check.Since = time.Now().Format(time.RFC3339)
-			alert(&check.Notify, "FAILED: "+name, err.Error())
-		}
-	} else {
+	err := fetch(check.Web)
+	if err == nil {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
 			alert(&check.Notify, "FIXED: "+name, "")
 		}
+	} else {
+		if !check.Failed {
+			check.Failed = true
+			check.Since = time.Now().Format(time.RFC3339)
+			alert(&check.Notify, "FAILED: "+name, err.Error())
+		}
 	}
+}
 
+// The actual HTTP GET.
+func fetch(url string) (err error) {
+	resp, err := http.Get(url)
+	if (err == nil) && resp.StatusCode != 200 {
+		err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
+	}
 	if resp != nil {
 		resp.Body.Close()
 	}
+	return err
 }
 
 // Logs and mail alerting.
