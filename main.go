@@ -24,6 +24,7 @@ import (
 	"flag"
 	"fmt"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -37,7 +38,7 @@ import (
 )
 
 // Application version
-const Version = "0.9.3"
+const Version = "0.9.4"
 
 // Check details
 type Check struct {
@@ -62,42 +63,38 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Docs:  https://github.com/chillum/jsonmon/wiki")
 	}
 	flag.Parse()
-
+	// -v for version.
 	if *version {
 		fmt.Println("jsonmon", Version)
 		fmt.Println(runtime.Version(), runtime.GOOS, runtime.GOARCH)
 		os.Exit(0)
 	}
-
-	config := flag.Args()
-	if len(config) < 1 {
+	// Should supply a config file.
+	args := flag.Args()
+	if len(args) < 1 {
 		flag.Usage()
 	}
-
 	// Tune concurrency.
 	if os.Getenv("GOMAXPROCS") == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU() + 1)
 	}
-
-	// Read YAML config or exit with an error.
-	yml, err := ioutil.ReadFile(config[0])
+	// Read config file or exit with error.
+	config, err := ioutil.ReadFile(args[0])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(3)
 	}
-	err = yaml.Unmarshal(yml, &checks)
+	err = yaml.Unmarshal(config, &checks)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", config[0], err)
 		os.Exit(3)
 	}
-
 	// Run checks.
 	var wg sync.WaitGroup
 	wg.Add(1)
 	for i := range checks {
 		go worker(&checks[i])
 	}
-
 	// Launch the JSON API.
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
@@ -112,11 +109,11 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 	}
-
 	// Wait forever.
 	wg.Wait()
 }
 
+// Background worker.
 func worker(check *Check) {
 	for {
 		if check.Repeat == 0 { // Set default timeout.
@@ -134,26 +131,25 @@ func worker(check *Check) {
 
 // Shell worker.
 func shell(check *Check) {
-	// Display name.
+	// Set display name.
 	var name string
 	if check.Name != "" {
 		name = check.Name
 	} else {
 		name = check.Shell
 	}
-
 	// Execute with shell.
 	if out, err := exec.Command("/bin/sh", "-c", check.Shell).Output(); err != nil {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(&check.Notify, "FAILED: "+name, strings.TrimSpace(string(out)))
+			alert(check.Notify, "FAILED: "+name, strings.TrimSpace(string(out)))
 		}
 	} else {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(&check.Notify, "FIXED: "+name, "")
+			alert(check.Notify, "FIXED: "+name, "")
 		}
 	}
 }
@@ -180,13 +176,13 @@ func web(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(&check.Notify, "FIXED: "+name, "")
+			alert(check.Notify, "FIXED: "+name, "")
 		}
 	} else {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(&check.Notify, "FAILED: "+name, err.Error())
+			alert(check.Notify, "FAILED: "+name, err.Error())
 		}
 	}
 }
@@ -204,11 +200,28 @@ func fetch(url string) (err error) {
 }
 
 // Logs and mail alerting.
-// TODO: send mail
-func alert(mail *string, subject string, message string) {
+func alert(mail string, subject string, message string) {
 	fmt.Println(subject)
+	// Log the alerts.
 	if message != "" {
 		fmt.Println(message)
+	}
+	// Mail the alerts.
+	if mail != "" {
+		// Make the message.
+		msg := "To: " + mail + "\nSubject: " + subject + "\n\n" // TODO: multiple address support
+		if message != "" {
+			msg += message
+		}
+		msg += ".\n"
+		// And send it.
+		sendmail := exec.Command("/usr/sbin/sendmail", "-t")
+		stdin, err := sendmail.StdinPipe()
+		err = sendmail.Start()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "ERROR:", err)
+		}
+		io.WriteString(stdin, msg)
 	}
 }
 
