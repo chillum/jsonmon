@@ -14,14 +14,15 @@ Environment:
   - the JSON API port
  GOMAXPROCS
   - defaults to CPU number + 1
-  - number of Golang processes to start
+  - number of processes to start
 */
 package main
 
 import (
 	"encoding/json"
+	"path"
+	"flag"
 	"fmt"
-	flag "github.com/ogier/pflag"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
@@ -54,10 +55,10 @@ var checks []Check
 // The main loop.
 func main() {
 	// Parse CLI args.
-	version := flag.BoolP("version", "v", false, "print version to stdout and exit")
+	version := flag.Bool("v", false, "print version to stdout and exit")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage:", os.Args[0], "path.to/config.yml")
-		fmt.Fprintln(os.Stderr, "Docs:\n  https://github.com/chillum/jsonmon/wiki")
+		fmt.Fprintln(os.Stderr, "Usage:", path.Base(os.Args[0]), "path.to/config.yml")
+		fmt.Fprintln(os.Stderr, "Docs:  https://github.com/chillum/jsonmon/wiki")
 	}
 	flag.Parse()
 
