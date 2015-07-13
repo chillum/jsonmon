@@ -1,14 +1,14 @@
 'use strict';
 
-var fs       = require('fs'),
-    yaml     = require('js-yaml'),
-    format   = require('dateformat'),
-    run      = require('child_process').exec,
-    http     = require('http'),
-    https    = require('https'),
-    mailer   = require('nodemailer'),
-    sendmail = require('nodemailer-sendmail-transport'),
-    Hapi     = require('hapi');
+const fs       = require('fs'),
+      yaml     = require('js-yaml'),
+      format   = require('dateformat'),
+      run      = require('child_process').exec,
+      http     = require('http'),
+      https    = require('https'),
+      mailer   = require('nodemailer'),
+      sendmail = require('nodemailer-sendmail-transport'),
+      Hapi     = require('hapi');
 
 // Get config or throw exception on error.
 try {
@@ -21,11 +21,11 @@ try {
 // Global failed/succeeded maps.
 var failed = {}, ok = {};
 // Sendmail transport.
-var send = mailer.createTransport(sendmail({path: '/usr/sbin/sendmail'}));
+const send = mailer.createTransport(sendmail({path: '/usr/sbin/sendmail'}));
 
 // Logs and mail alerting.
-var alert = function(mail, subject, message) {
-  var rcpt;
+const alert = function(mail, subject, message) {
+  let rcpt;
   if (mail) {
     if (Array.isArray(mail))
       rcpt = mail.join(', ');
@@ -46,7 +46,7 @@ var alert = function(mail, subject, message) {
 };
 
 // Mark Web check as failed.
-var fail = function(name, url, notify, message) {
+const fail = function(name, url, notify, message) {
   if (!failed[url]) failed[url] = format(Date.now(), 'isoDateTime');
   if (ok[url]) {
     delete ok[url];
@@ -55,7 +55,7 @@ var fail = function(name, url, notify, message) {
 };
 
 // Fail if HTTP status code is not 200.
-var check = function(name, url, req, notify, tries) {
+const check = function(name, url, req, notify, tries) {
   if (req.statusCode !== 200) {
     if (tries)
       check(name, url, req, notify, tries - 1);
@@ -72,7 +72,7 @@ var check = function(name, url, req, notify, tries) {
 };
 
 // Check the HTTP URL in several tries.
-var fetch_http = function(name, url, notify, tries) {
+const fetch_http = function(name, url, notify, tries) {
   http.get(url, function(res) {
     check(name, url, res, notify, tries);
   }).on('error', function(e) {
@@ -84,7 +84,7 @@ var fetch_http = function(name, url, notify, tries) {
 };
 
 // Check the HTTPS URL in several tries.
-var fetch_https = function(name, url, notify, tries) {
+const fetch_https = function(name, url, notify, tries) {
   https.get(url, function(res) {
     check(name, url, res, notify, tries);
   }).on('error', function(e) {
@@ -96,7 +96,7 @@ var fetch_https = function(name, url, notify, tries) {
 };
 
 // Web worker.
-var web = function(name, url, notify, repeat) {
+const web = function(name, url, notify, repeat) {
   if (url.match(/^http:\/\//)) {
     fetch_http(name, url, notify, 3);
   } else if (url.match(/^https:\/\//)) {
@@ -112,7 +112,7 @@ var web = function(name, url, notify, repeat) {
 };
 
 // Shell worker.
-var exec = function(name, cmd, notify, repeat) {
+const exec = function(name, cmd, notify, repeat) {
   run(cmd, function(error, stdout, stderr) {
     if (error !== null) {
       if (!failed[cmd]) failed[cmd] = format(Date.now(), 'isoDateTime');
@@ -148,15 +148,15 @@ checks.forEach(function(i) {
 });
 
 // The JSON API.
-var server = new Hapi.Server();
+const server = new Hapi.Server();
 server.connection({
   host: (process.env.HOST || 'localhost'),
   port: (process.env.PORT || '3000')
 });
 
 // Format JSON for output.
-var display = function(i) {
-  var o = {};
+const display = function(i) {
+  let o = {};
   if (i.name)
     o.name = i.name;
   if (i.web) {
@@ -188,7 +188,7 @@ server.route({
   method: 'GET',
   path: '/',
   handler: function(request, reply) {
-    var result = [];
+    let result = [];
     checks.forEach(function(i) {
       result.push(display(i));
     });

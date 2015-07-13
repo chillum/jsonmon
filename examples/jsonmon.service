@@ -3,7 +3,7 @@
 [Service]
 WorkingDirectory = /home/jsonmon/jsonmon
 User             = jsonmon
-ExecStart        = /usr/bin/node server.js
+ExecStart        = /usr/bin/node --harmony server.js
 Restart          = always
 
 # The JSON API host & port:

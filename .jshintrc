@@ -1,6 +1,7 @@
 // -*- js -*-
 {
   "node":          true,
+  "esnext":        true,
   "futurehostile": true,
   "undef":         true,
   "latedef":       true,
