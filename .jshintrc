@@ -2,6 +2,7 @@
 {
   "node":          true,
   "esnext":        true,
+  "varstmt":       true,
   "futurehostile": true,
   "undef":         true,
   "latedef":       true,

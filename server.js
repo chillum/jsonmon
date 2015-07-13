@@ -11,7 +11,7 @@ const fs       = require('fs'),
       Hapi     = require('hapi');
 
 // Global failed/succeeded maps.
-var failed = {}, ok = {};
+let failed = {}, ok = {};
 // Sendmail transport.
 const send = mailer.createTransport(sendmail({path: '/usr/sbin/sendmail'}));
 // The JSON API.
@@ -159,7 +159,7 @@ const display = function(i) {
 
 // The main loop.
 const main = function() {
-  var checks;
+  let checks; // Should be a const.
   // Get config or throw exception on error.
   try {
     checks = yaml.safeLoad(fs.readFileSync('config.yml', 'utf8'));
