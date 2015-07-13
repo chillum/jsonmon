@@ -50,8 +50,7 @@ type Check struct {
 	Since  string `json:"since,omitempty" yaml:"-"`
 }
 
-// Global checks list.
-// Need to share it with workers and Web UI.
+// Global checks list. Need to share it with workers and Web UI.
 var checks []Check
 
 // The main loop.
@@ -161,16 +160,22 @@ func shell(check *Check) {
 
 // Web worker.
 func web(check *Check) {
-	// Display name.
+	// Set display name.
 	var name string
 	if check.Name != "" {
 		name = check.Name
 	} else {
 		name = check.Web
 	}
-
-	// Get the URL. TODO: 3 attempts
-	err := fetch(check.Web)
+	// Get the URL in 3 attempts.
+	var err error
+	for i := 0; i < 3; i++ {
+		err = fetch(check.Web)
+		if err == nil {
+			break
+		}
+	}
+	// Process status.
 	if err == nil {
 		if check.Failed {
 			check.Failed = false
@@ -189,7 +194,7 @@ func web(check *Check) {
 // The actual HTTP GET.
 func fetch(url string) (err error) {
 	resp, err := http.Get(url)
-	if (err == nil) && resp.StatusCode != 200 {
+	if err == nil && resp.StatusCode != 200 {
 		err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
 	}
 	if resp != nil {
