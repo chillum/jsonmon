@@ -1,0 +1,1 @@
+require 'go4rake'
