@@ -9,10 +9,13 @@
 # Checks once in 10 seconds:
 - web:    http://192.168.6.1
   repeat: 10
+  return: 301  # Should return HTTP 301.
   notify: me@localhost
 # Pings once in 2 seconds:
-- shell:  ping -t 1 192.168.6.1
+- shell:  ping -c 1 192.168.6.1
   repeat: 2
   notify:
     - me@localhost
     - sales@server
+# This check fails if ping succeeds:
+- shell:  ping -c 1 192.168.7.1; [ $? = 1 -o $? = 2 ]

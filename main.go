@@ -46,6 +46,7 @@ type Check struct {
 	Web    string      `json:"web,omitempty" yaml:"web"`
 	Shell  string      `json:"shell,omitempty" yaml:"shell"`
 	Match  string      `json:"-" yaml:"match"`
+	Return int         `json:"-" yaml:"return"`
 	Notify interface{} `json:"-" yaml:"notify"`
 	Tries  int         `json:"-" yaml:"tries"`
 	Repeat int         `json:"-" yaml:"repeat"`
@@ -184,10 +185,13 @@ func web(check *Check) {
 	} else {
 		name = check.Web
 	}
+	if check.Return == 0 { // Successful HTTP return code is 200.
+		check.Return = 200
+	}
 	// Get the URL in N attempts.
 	var err error
 	for i := 0; i < check.Tries; i++ {
-		err = fetch(check.Web, check.Match)
+		err = fetch(check.Web, check.Match, check.Return)
 		if err == nil {
 			break
 		}
@@ -208,23 +212,23 @@ func web(check *Check) {
 	}
 }
 
-// The actual HTTP GET. Fails if HTTP status code is not 200.
-func fetch(url string, match string) error {
+// The actual HTTP GET.
+func fetch(url string, match string, code int) error {
 	var err error
 	var resp *http.Response
 	resp, err = http.Get(url)
-	if err == nil && resp.StatusCode != 200 {
+	if err == nil && resp.StatusCode != code {
 		err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
-	}
-	// Match regexp.
-	if resp != nil && match != "" {
-		var regex *regexp.Regexp
-		regex, err = regexp.Compile(match)
-		if err == nil {
-			var body []byte
-			body, _ = ioutil.ReadAll(resp.Body)
-			if !regex.Match(body) {
-				err = errors.New(url + " output did not match " + match)
+	} else { // Match regexp.
+		if resp != nil && match != "" {
+			var regex *regexp.Regexp
+			regex, err = regexp.Compile(match)
+			if err == nil {
+				var body []byte
+				body, _ = ioutil.ReadAll(resp.Body)
+				if !regex.Match(body) {
+					err = errors.New(url + " output did not match " + match)
+				}
 			}
 		}
 	}
