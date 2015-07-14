@@ -1,6 +1,7 @@
 # Checks once in a minute and does not notify by email:
 - name:   Yandex
   web:    https://ya.ru
+  tries:  3 # Optional attempts number
 # Checks once in 10 seconds:
 - web:    http://192.168.6.1
   repeat: 10

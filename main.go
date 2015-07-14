@@ -38,7 +38,7 @@ import (
 )
 
 // Application version
-const Version = "0.9.6"
+const Version = "0.9.7"
 
 // Check details
 type Check struct {
@@ -46,6 +46,7 @@ type Check struct {
 	Web    string      `json:"web,omitempty" yaml:"web"`
 	Shell  string      `json:"shell,omitempty" yaml:"shell"`
 	Notify interface{} `json:"-" yaml:"notify"`
+	Tries  int         `json:"-" yaml:"tries"`
 	Repeat int         `json:"-" yaml:"repeat"`
 	Failed bool        `json:"failed" yaml:"-"`
 	Since  string      `json:"since,omitempty" yaml:"-"`
@@ -119,6 +120,9 @@ func worker(check *Check) {
 		if check.Repeat == 0 { // Set default timeout.
 			check.Repeat = 60
 		}
+		if check.Tries == 0 { // Default to 1 attempt.
+			check.Tries = 1
+		}
 		if check.Web != "" {
 			web(check)
 		}
@@ -138,18 +142,27 @@ func shell(check *Check) {
 	} else {
 		name = check.Shell
 	}
-	// Execute with shell.
-	if out, err := exec.Command("/bin/sh", "-c", check.Shell).Output(); err != nil {
-		if !check.Failed {
-			check.Failed = true
-			check.Since = time.Now().Format(time.RFC3339)
-			alert(check.Notify, "FAILED: "+name, strings.TrimSpace(string(out)))
+	// Execute with shell in N attemps.
+	var out []byte
+	var err error
+	for i := 0; i < check.Tries; i++ {
+		out, err = exec.Command("/bin/sh", "-c", check.Shell).Output()
+		if err == nil {
+			break
 		}
-	} else {
+	}
+	// Process results.
+	if err == nil {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
 			alert(check.Notify, "FIXED: "+name, "")
+		}
+	} else {
+		if !check.Failed {
+			check.Failed = true
+			check.Since = time.Now().Format(time.RFC3339)
+			alert(check.Notify, "FAILED: "+name, strings.TrimSpace(string(out)))
 		}
 	}
 }
@@ -163,9 +176,9 @@ func web(check *Check) {
 	} else {
 		name = check.Web
 	}
-	// Get the URL in 3 attempts.
+	// Get the URL in N attempts.
 	var err error
-	for i := 0; i < 3; i++ {
+	for i := 0; i < check.Tries; i++ {
 		err = fetch(check.Web)
 		if err == nil {
 			break
