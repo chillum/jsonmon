@@ -38,7 +38,7 @@ import (
 )
 
 // Application version
-const Version = "0.9.7"
+const Version = "0.9.8"
 
 // Check details
 type Check struct {
