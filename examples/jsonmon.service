@@ -2,7 +2,7 @@
 
 [Service]
 User             = jsonmon
-ExecStart        = /usr/local/bin/jsonmon /etc/jsonmon.yml
+ExecStart        = /usr/local/bin/jsonmon /etc/jsonmon/config.yml
 Restart          = always
 
 # The JSON API host & port:

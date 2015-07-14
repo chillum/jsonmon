@@ -14,7 +14,7 @@ Environment:
   - the JSON API port
  GOMAXPROCS
   - defaults to CPU number + 1
-  - number of processes to start
+  - number of threads to start
 */
 package main
 
@@ -38,7 +38,7 @@ import (
 )
 
 // Application version
-const Version = "0.9.5"
+const Version = "0.9.6"
 
 // Check details
 type Check struct {
@@ -187,8 +187,8 @@ func web(check *Check) {
 	}
 }
 
-// The actual HTTP GET.
-func fetch(url string) (err error) {
+// The actual HTTP GET. Fails if HTTP status code is not 200.
+func fetch(url string) error {
 	resp, err := http.Get(url)
 	if err == nil && resp.StatusCode != 200 {
 		err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
@@ -223,7 +223,7 @@ func alert(mail interface{}, subject string, message string) {
 		if message != "" {
 			msg += message
 		}
-		msg += ".\n"
+		msg += "\n.\n"
 		// And send it.
 		sendmail := exec.Command("/usr/sbin/sendmail", "-t")
 		stdin, err := sendmail.StdinPipe()
@@ -232,11 +232,16 @@ func alert(mail interface{}, subject string, message string) {
 			fmt.Fprintln(os.Stderr, "ERROR:", err)
 		}
 		io.WriteString(stdin, msg)
+		sendmail.Wait()
 	}
 }
 
 // Format JSON for output.
 func display(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" { // Serve for root page only, 404 otherwise.
+		http.NotFound(w, r)
+		return
+	}
 	json, _ := json.MarshalIndent(&checks, "", "  ")
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(json)
