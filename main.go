@@ -146,7 +146,7 @@ func shell(check *Check) {
 	var out []byte
 	var err error
 	for i := 0; i < check.Tries; i++ {
-		out, err = exec.Command("/bin/sh", "-c", check.Shell).Output()
+		out, err = exec.Command("/bin/sh", "-c", check.Shell).CombinedOutput()
 		if err == nil {
 			break
 		}
@@ -156,13 +156,13 @@ func shell(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(check.Notify, "FIXED: "+name, "")
+			alert(check.Notify, "Fixed: "+name, "")
 		}
 	} else {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(check.Notify, "FAILED: "+name, strings.TrimSpace(string(out)))
+			alert(check.Notify, "Failed: "+name, strings.TrimSpace(string(out)))
 		}
 	}
 }
