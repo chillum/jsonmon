@@ -135,7 +135,7 @@ func worker(check *Check) {
 
 // Shell worker.
 func shell(check *Check) {
-	// Set display name.
+	// Set check's display name.
 	var name string
 	if check.Name != "" {
 		name = check.Name
@@ -169,7 +169,7 @@ func shell(check *Check) {
 
 // Web worker.
 func web(check *Check) {
-	// Set display name.
+	// Set check's display name.
 	var name string
 	if check.Name != "" {
 		name = check.Name
@@ -184,7 +184,7 @@ func web(check *Check) {
 			break
 		}
 	}
-	// Process status.
+	// Process results.
 	if err == nil {
 		if check.Failed {
 			check.Failed = false
