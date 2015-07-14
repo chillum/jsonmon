@@ -30,6 +30,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -38,13 +39,14 @@ import (
 )
 
 // Application version
-const Version = "0.9.8"
+const Version = "0.9.9"
 
 // Check details
 type Check struct {
 	Name   string      `json:"name,omitempty" yaml:"name"`
 	Web    string      `json:"web,omitempty" yaml:"web"`
 	Shell  string      `json:"shell,omitempty" yaml:"shell"`
+	Match  string      `json:"-" yaml:"match"`
 	Notify interface{} `json:"-" yaml:"notify"`
 	Tries  int         `json:"-" yaml:"tries"`
 	Repeat int         `json:"-" yaml:"repeat"`
@@ -179,7 +181,7 @@ func web(check *Check) {
 	// Get the URL in N attempts.
 	var err error
 	for i := 0; i < check.Tries; i++ {
-		err = fetch(check.Web)
+		err = fetch(check.Web, check.Match)
 		if err == nil {
 			break
 		}
@@ -201,10 +203,23 @@ func web(check *Check) {
 }
 
 // The actual HTTP GET. Fails if HTTP status code is not 200.
-func fetch(url string) error {
-	resp, err := http.Get(url)
+func fetch(url string, match string) error {
+	var err error
+	var resp *http.Response
+	resp, err = http.Get(url)
 	if err == nil && resp.StatusCode != 200 {
 		err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
+	}
+	if resp != nil && match != "" {
+		var regex *regexp.Regexp
+		regex, err = regexp.Compile(match)
+		if err == nil {
+			var body []byte
+			body, _ = ioutil.ReadAll(resp.Body)
+			if !regex.Match(body) {
+				err = errors.New(url + " output did not match " + match)
+			}
+		}
 	}
 	if resp != nil {
 		resp.Body.Close()
