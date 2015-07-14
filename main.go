@@ -33,7 +33,6 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -150,6 +149,13 @@ func shell(check *Check) {
 	for i := 0; i < check.Tries; i++ {
 		out, err = exec.Command("/bin/sh", "-c", check.Shell).CombinedOutput()
 		if err == nil {
+			if check.Match != "" { // Match regexp.
+				var regex *regexp.Regexp
+				regex, err = regexp.Compile(check.Match)
+				if err == nil && !regex.Match(out) {
+					err = errors.New("ERROR: output did not match " + check.Match)
+				}
+			}
 			break
 		}
 	}
@@ -164,7 +170,7 @@ func shell(check *Check) {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(check.Notify, "Failed: "+name, strings.TrimSpace(string(out)))
+			alert(check.Notify, "Failed: "+name, string(out)+err.Error())
 		}
 	}
 }
@@ -210,6 +216,7 @@ func fetch(url string, match string) error {
 	if err == nil && resp.StatusCode != 200 {
 		err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
 	}
+	// Match regexp.
 	if resp != nil && match != "" {
 		var regex *regexp.Regexp
 		regex, err = regexp.Compile(match)

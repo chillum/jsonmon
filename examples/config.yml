@@ -4,8 +4,8 @@
 # Checks once in a minute and does not notify by email:
 - name:   Yandex
   web:    https://ya.ru
-  match:  Найти
-  tries:  3 # Optional attempts number.
+  match:  Найти # Regexp to match in response.
+  tries:  3     # Optional attempts number.
 # Checks once in 10 seconds:
 - web:    http://192.168.6.1
   repeat: 10
