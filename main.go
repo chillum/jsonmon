@@ -38,17 +38,17 @@ import (
 )
 
 // Application version
-const Version = "0.9.4"
+const Version = "0.9.5"
 
 // Check details
 type Check struct {
-	Name   string `json:"name,omitempty" yaml:"name"`
-	Web    string `json:"web,omitempty" yaml:"web"`
-	Shell  string `json:"shell,omitempty" yaml:"shell"`
-	Notify string `json:"-" yaml:"notify"`
-	Repeat int    `json:"-" yaml:"repeat"`
-	Failed bool   `json:"failed" yaml:"-"`
-	Since  string `json:"since,omitempty" yaml:"-"`
+	Name   string      `json:"name,omitempty" yaml:"name"`
+	Web    string      `json:"web,omitempty" yaml:"web"`
+	Shell  string      `json:"shell,omitempty" yaml:"shell"`
+	Notify interface{} `json:"-" yaml:"notify"`
+	Repeat int         `json:"-" yaml:"repeat"`
+	Failed bool        `json:"failed" yaml:"-"`
+	Since  string      `json:"since,omitempty" yaml:"-"`
 }
 
 // Global checks list. Need to share it with workers and Web UI.
@@ -200,16 +200,26 @@ func fetch(url string) (err error) {
 }
 
 // Logs and mail alerting.
-func alert(mail string, subject string, message string) {
+func alert(mail interface{}, subject string, message string) {
 	fmt.Println(subject)
 	// Log the alerts.
 	if message != "" {
 		fmt.Println(message)
 	}
 	// Mail the alerts.
-	if mail != "" {
+	if mail != nil {
 		// Make the message.
-		msg := "To: " + mail + "\nSubject: " + subject + "\n\n" // TODO: multiple address support
+		var rcpt string
+		var ok bool
+		if rcpt, ok = mail.(string); !ok {
+			for i, v := range mail.([]interface{}) {
+				if i != 0 {
+					rcpt += ", "
+				}
+				rcpt += v.(string)
+			}
+		}
+		msg := "To: " + rcpt + "\nSubject: " + subject + "\n\n"
 		if message != "" {
 			msg += message
 		}

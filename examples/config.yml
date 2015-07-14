@@ -8,3 +8,6 @@
 # Pings once in 2 seconds:
 - shell:  ping -t 1 192.168.6.1
   repeat: 2
+  notify:
+    - me@localhost
+    - sales@server
