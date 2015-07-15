@@ -21,7 +21,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io"
@@ -70,34 +69,39 @@ var checks []Check
 // The main loop.
 func main() {
 	// Parse CLI args.
-	showVersion := flag.Bool("v", false, "print version to stdout and exit")
-	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage:", path.Base(os.Args[0]), "path.to/config.yml")
-		fmt.Fprintln(os.Stderr, "Docs:  https://github.com/chillum/jsonmon/wiki")
+	usage := "Usage: " + path.Base(os.Args[0]) + " path.to/config.yml\nDocs:  https://github.com/chillum/jsonmon/wiki"
+	if len(os.Args) != 2 {
+		fmt.Fprintln(os.Stderr, usage)
+		os.Exit(1)
 	}
-	flag.Parse()
 	// -v for version.
 	version.App = Version
 	version.Go = runtime.Version()
 	version.Os = runtime.GOOS
 	version.Arch = runtime.GOARCH
-	if *showVersion {
+	switch os.Args[1] {
+	case "-h":
+		fallthrough
+	case "-help":
+		fallthrough
+	case "--help":
+		fmt.Fprintln(os.Stderr, usage)
+		os.Exit(0)
+	case "-v":
+		fallthrough
+	case "-version":
+		fallthrough
+	case "--version":
 		json, _ := json.MarshalIndent(&version, "", "  ")
 		fmt.Println(string(json))
 		os.Exit(0)
-	}
-	// Should supply a config file.
-	args := flag.Args()
-	if len(args) < 1 {
-		flag.Usage()
-		os.Exit(2)
 	}
 	// Tune concurrency.
 	if os.Getenv("GOMAXPROCS") == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU() + 1)
 	}
 	// Read config file or exit with error.
-	config, err := ioutil.ReadFile(args[0])
+	config, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 		os.Exit(3)
