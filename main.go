@@ -296,22 +296,25 @@ func alert(mail interface{}, subject string, message string) {
 	}
 }
 
-// Format checks JSON for output.
+// Display checks' details.
 func getChecks(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" { // Serve for root page only, 404 otherwise.
 		http.NotFound(w, r)
 		return
 	}
-	json, _ := json.MarshalIndent(&checks, "", "  ")
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(json)
-	fmt.Fprintln(w, "") // Trailing newline.
+	displayJSON(w, &checks)
 }
 
 // Display application version.
 func getVersion(w http.ResponseWriter, r *http.Request) {
-	json, _ := json.MarshalIndent(&version, "", "  ")
+	displayJSON(w, &version)
+}
+
+// Output JSON.
+func displayJSON(w http.ResponseWriter, data interface{}) {
+	json, _ := json.MarshalIndent(&data, "", "  ")
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(json)
 	fmt.Fprintln(w, "") // Trailing newline.
 }
