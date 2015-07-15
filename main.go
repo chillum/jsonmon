@@ -76,6 +76,7 @@ func main() {
 	args := flag.Args()
 	if len(args) < 1 {
 		flag.Usage()
+		os.Exit(2)
 	}
 	// Tune concurrency.
 	if os.Getenv("GOMAXPROCS") == "" {
