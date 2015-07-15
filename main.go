@@ -37,10 +37,20 @@ import (
 	"time"
 )
 
-// Application version
-const Version = "0.9.9"
+// Application version.
+const Version = "1.0"
 
-// Check details
+// This one is for internal use.
+type ver struct {
+	App  string `json:"jsonmon"`
+	Go   string `json:"runtime"`
+	Os   string `json:"os"`
+	Arch string `json:"arch"`
+}
+
+var version ver
+
+// Check details.
 type Check struct {
 	Name   string      `json:"name,omitempty" yaml:"name"`
 	Web    string      `json:"web,omitempty" yaml:"web"`
@@ -60,16 +70,20 @@ var checks []Check
 // The main loop.
 func main() {
 	// Parse CLI args.
-	version := flag.Bool("v", false, "print version to stdout and exit")
+	showVersion := flag.Bool("v", false, "print version to stdout and exit")
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage:", path.Base(os.Args[0]), "path.to/config.yml")
 		fmt.Fprintln(os.Stderr, "Docs:  https://github.com/chillum/jsonmon/wiki")
 	}
 	flag.Parse()
 	// -v for version.
-	if *version {
-		fmt.Println("jsonmon", Version)
-		fmt.Println(runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	version.App = Version
+	version.Go = runtime.Version()
+	version.Os = runtime.GOOS
+	version.Arch = runtime.GOARCH
+	if *showVersion {
+		json, _ := json.MarshalIndent(&version, "", "  ")
+		fmt.Println(string(json))
 		os.Exit(0)
 	}
 	// Should supply a config file.
@@ -108,7 +122,8 @@ func main() {
 	if port == "" {
 		port = "3000"
 	}
-	http.HandleFunc("/", display)
+	http.HandleFunc("/version", getVersion)
+	http.HandleFunc("/", getChecks)
 	err = http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
@@ -277,13 +292,21 @@ func alert(mail interface{}, subject string, message string) {
 	}
 }
 
-// Format JSON for output.
-func display(w http.ResponseWriter, r *http.Request) {
+// Format checks JSON for output.
+func getChecks(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" { // Serve for root page only, 404 otherwise.
 		http.NotFound(w, r)
 		return
 	}
 	json, _ := json.MarshalIndent(&checks, "", "  ")
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(json)
+	fmt.Fprintln(w, "") // Trailing newline.
+}
+
+// Display application version.
+func getVersion(w http.ResponseWriter, r *http.Request) {
+	json, _ := json.MarshalIndent(&version, "", "  ")
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(json)
 	fmt.Fprintln(w, "") // Trailing newline.
