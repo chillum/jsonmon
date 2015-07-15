@@ -240,10 +240,11 @@ func fetch(url string, match string, code int) error {
 
 // Logs and mail alerting.
 func alert(mail interface{}, subject string, message string) {
-	fmt.Println(subject)
 	// Log the alerts.
-	if message != "" {
-		fmt.Println(message)
+	if message == "" {
+		fmt.Println(subject)
+	} else {
+		fmt.Println(subject + "\n" + message)
 	}
 	// Mail the alerts.
 	if mail != nil {
