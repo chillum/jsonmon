@@ -1,8 +1,9 @@
 [Unit]
 
 [Service]
+WorkingDirectory = /etc/jsonmon
 User             = jsonmon
-ExecStart        = /usr/local/bin/jsonmon /etc/jsonmon/config.yml
+ExecStart        = /usr/local/bin/jsonmon config.yml
 Restart          = always
 
 # The JSON API host & port:
