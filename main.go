@@ -2,7 +2,7 @@
 Quick and simple monitoring system
 
 Usage:
- jsonmon path.to/config.yml
+ jsonmon /etc/jsonmon/config.yml
  jsonmon -v # Prints version to stdout and exits
 
 Environment:
@@ -69,7 +69,8 @@ var checks []Check
 // The main loop.
 func main() {
 	// Parse CLI args.
-	usage := "Usage: " + path.Base(os.Args[0]) + " path.to/config.yml\nDocs:  https://github.com/chillum/jsonmon/wiki"
+	usage := "Usage: " + path.Base(os.Args[0]) + " /etc/jsonmon/config.yml\n" +
+		"Docs:  https://github.com/chillum/jsonmon/wiki"
 	if len(os.Args) != 2 {
 		fmt.Fprintln(os.Stderr, usage)
 		os.Exit(1)
