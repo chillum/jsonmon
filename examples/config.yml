@@ -11,6 +11,7 @@
   repeat: 10
   return: 301  # Should return HTTP 301.
   notify: me@localhost
+  alert:  ./slack.sh
 # Pings once in 2 seconds:
 - shell:  ping -c 1 192.168.6.1
   repeat: 2
@@ -19,3 +20,6 @@
     - sales@server
 # This check fails if ping succeeds:
 - shell:  ping -c 1 192.168.7.1; [ $? = 1 -o $? = 2 ]
+  alert:
+    - ./slack.sh
+    - ./sms.sh

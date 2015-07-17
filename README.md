@@ -4,8 +4,7 @@
 ### Features
 
 * Shell and HTTP/HTTPS checks
-* Mail alerting and logging
+* Alerting and logging
 * JSON API to view current status
 
 #### [Documentation](https://github.com/chillum/jsonmon/wiki)
-

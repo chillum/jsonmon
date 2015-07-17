@@ -37,7 +37,7 @@ import (
 )
 
 // Application version.
-const Version = "1.0"
+const Version = "1.1"
 
 // This one is for internal use.
 type ver struct {
@@ -57,6 +57,7 @@ type Check struct {
 	Match  string      `json:"-" yaml:"match"`
 	Return int         `json:"-" yaml:"return"`
 	Notify interface{} `json:"-" yaml:"notify"`
+	Alert  interface{} `json:"-", yaml:"alert`
 	Tries  int         `json:"-" yaml:"tries"`
 	Repeat int         `json:"-" yaml:"repeat"`
 	Failed bool        `json:"failed" yaml:"-"`
@@ -186,13 +187,16 @@ func shell(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(check.Notify, "Fixed: "+name, "")
+			notify(check.Notify, "Fixed: "+name, nil)
+			alert(check, &name, nil)
 		}
 	} else {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(check.Notify, "Failed: "+name, string(out)+err.Error())
+			msg := string(out) + err.Error()
+			notify(check.Notify, "Failed: "+name, &msg)
+			alert(check, &name, &msg)
 		}
 	}
 }
@@ -222,13 +226,17 @@ func web(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(check.Notify, "FIXED: "+name, "")
+			notify(check.Notify, "Fixed: "+name, nil)
+			alert(check, &name, nil)
+
 		}
 	} else {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			alert(check.Notify, "FAILED: "+name, err.Error())
+			msg := err.Error()
+			notify(check.Notify, "Failed: "+name, &msg)
+			alert(check, &name, &msg)
 		}
 	}
 }
@@ -260,12 +268,12 @@ func fetch(url string, match string, code int) error {
 }
 
 // Logs and mail alerting.
-func alert(mail interface{}, subject string, message string) {
+func notify(mail interface{}, subject string, message *string) {
 	// Log the alerts.
-	if message == "" {
+	if message == nil {
 		fmt.Println(subject)
 	} else {
-		fmt.Println(subject + "\n" + message)
+		fmt.Println(subject + "\n" + *message)
 	}
 	// Mail the alerts.
 	if mail != nil {
@@ -281,19 +289,39 @@ func alert(mail interface{}, subject string, message string) {
 			}
 		}
 		msg := "To: " + rcpt + "\nSubject: " + subject + "\n\n"
-		if message != "" {
-			msg += message
+		if message != nil {
+			msg += *message
 		}
 		msg += "\n.\n"
 		// And send it.
 		sendmail := exec.Command("/usr/sbin/sendmail", "-t")
-		stdin, err := sendmail.StdinPipe()
-		err = sendmail.Start()
+		stdin, _ := sendmail.StdinPipe()
+		err := sendmail.Start()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "ERROR:", err)
 		}
 		io.WriteString(stdin, msg)
 		sendmail.Wait()
+	}
+}
+
+// Executes callback. Passes args: true/false, check's name, message.
+func alert(check *Check, name *string, msg *string) {
+	if check.Alert != nil {
+		plugin, ok := check.Alert.(string)
+		if ok { // check.Alert is a string.
+			out, err := exec.Command(plugin, strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "ERROR:", string(out)+err.Error())
+			}
+		} else { // check.Alert is a list.
+			for _, i := range check.Alert.([]interface{}) {
+				out, err := exec.Command(i.(string), strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "ERROR:", string(out)+err.Error())
+				}
+			}
+		}
 	}
 }
 
