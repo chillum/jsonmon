@@ -37,7 +37,7 @@ import (
 )
 
 // Application version.
-const Version = "1.1"
+const Version = "1.1.1"
 
 // This one is for internal use.
 type ver struct {
@@ -344,7 +344,8 @@ func getVersion(w http.ResponseWriter, r *http.Request) {
 func displayJSON(w http.ResponseWriter, data interface{}) {
 	json, _ := json.MarshalIndent(&data, "", "  ")
 	w.Header().Set("Server", "jsonmon")
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(json)
 	fmt.Fprintln(w, "") // Trailing newline.
