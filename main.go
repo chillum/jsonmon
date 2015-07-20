@@ -37,7 +37,7 @@ import (
 )
 
 // Application version.
-const Version = "1.1.1"
+const Version = "1.2"
 
 // This one is for internal use.
 type ver struct {
@@ -66,6 +66,9 @@ type Check struct {
 
 // Global checks list. Need to share it with workers and Web UI.
 var checks []Check
+
+// Global last modified date for HTTP caching.
+var modified = time.Now()
 
 // The main loop.
 func main() {
@@ -187,6 +190,7 @@ func shell(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
+			modified = time.Now()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
 		}
@@ -194,6 +198,7 @@ func shell(check *Check) {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
+			modified = time.Now()
 			msg := string(out) + err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
 			alert(check, &name, &msg)
@@ -226,6 +231,7 @@ func web(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
+			modified = time.Now()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
 
@@ -234,6 +240,7 @@ func web(check *Check) {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
+			modified = time.Now()
 			msg := err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
 			alert(check, &name, &msg)
@@ -332,21 +339,29 @@ func getChecks(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	displayJSON(w, &checks)
+	displayJSON(w, r, &checks)
 }
 
 // Display application version.
 func getVersion(w http.ResponseWriter, r *http.Request) {
-	displayJSON(w, &version)
+	displayJSON(w, r, &version)
 }
 
 // Output JSON.
-func displayJSON(w http.ResponseWriter, data interface{}) {
-	json, _ := json.MarshalIndent(&data, "", "  ")
+func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
 	w.Header().Set("Server", "jsonmon")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Content-Type", "application/json;charset=utf-8")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Write(json)
-	fmt.Fprintln(w, "") // Trailing newline.
+	if t, err := time.Parse(time.RFC1123, r.Header.Get("If-Modified-Since")); err == nil && modified.Before(t.Add(1*time.Second)) {
+		h := w.Header()
+		delete(h, "Content-Type")
+		delete(h, "Content-Length")
+		w.WriteHeader(http.StatusNotModified)
+	} else {
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Last-Modified", modified.UTC().Format(time.RFC1123))
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json;charset=utf-8")
+		json, _ := json.MarshalIndent(&data, "", "  ")
+		w.Write(json)
+		fmt.Fprintln(w, "") // Trailing newline.
+	}
 }
