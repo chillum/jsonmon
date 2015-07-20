@@ -9,10 +9,10 @@
 
 case $1 in
     "true")
-        data="{\"text\": \"Failed: $2\n$3\", \"icon_emoji\": \":bell\"}"
+        data="{\"text\": \"Failed: $2\n$3\"}"
         ;;
     "false")
-        data="{\"text\": \"Fixed: $2\", \"icon_emoji\": \":no_bell\"}"
+        data="{\"text\": \"Fixed: $2\"}"
         ;;
     *)
         exit 1
