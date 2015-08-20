@@ -253,17 +253,19 @@ func fetch(url string, match string, code int) error {
 	var err error
 	var resp *http.Response
 	resp, err = http.Get(url)
-	if err == nil && resp.StatusCode != code {
-		err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
-	} else { // Match regexp.
-		if resp != nil && match != "" {
-			var regex *regexp.Regexp
-			regex, err = regexp.Compile(match)
-			if err == nil {
-				var body []byte
-				body, _ = ioutil.ReadAll(resp.Body)
-				if !regex.Match(body) {
-					err = errors.New(url + " output did not match " + match)
+	if err == nil {
+		if resp.StatusCode != code { // Check status code.
+			err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
+		} else { // Match regexp.
+			if resp != nil && match != "" {
+				var regex *regexp.Regexp
+				regex, err = regexp.Compile(match)
+				if err == nil {
+					var body []byte
+					body, _ = ioutil.ReadAll(resp.Body)
+					if !regex.Match(body) {
+						err = errors.New(url + " output did not match " + match)
+					}
 				}
 			}
 		}
@@ -359,7 +361,7 @@ func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Last-Modified", modified.UTC().Format(time.RFC1123))
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Content-Type", "application/json;charset=utf-8")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json, _ := json.MarshalIndent(&data, "", "  ")
 		w.Write(json)
 		fmt.Fprintln(w, "") // Trailing newline.
