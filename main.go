@@ -72,7 +72,7 @@ var modified string
 
 // Construct the last modified string.
 func etag() {
-	modified = "\"" + strconv.FormatInt(time.Now().UnixNano(), 10) + "\""
+	modified = "W/\"" + strconv.FormatInt(time.Now().UnixNano(), 10) + "\""
 }
 
 // The main loop.
