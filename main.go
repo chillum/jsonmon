@@ -37,7 +37,7 @@ import (
 )
 
 // Application version.
-const Version = "1.2"
+const Version = "1.2.1"
 
 // This one is for internal use.
 type ver struct {
@@ -68,7 +68,12 @@ type Check struct {
 var checks []Check
 
 // Global last modified date for HTTP caching.
-var modified = time.Now()
+var modified string
+
+// Construct the last modified string.
+func etag() {
+	modified = "\"" + strconv.FormatInt(time.Now().UnixNano(), 10) + "\""
+}
 
 // The main loop.
 func main() {
@@ -119,6 +124,7 @@ func main() {
 	// Run checks.
 	var wg sync.WaitGroup
 	wg.Add(1)
+	etag()
 	for i := range checks {
 		go worker(&checks[i])
 	}
@@ -190,7 +196,7 @@ func shell(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
-			modified = time.Now()
+			etag()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
 		}
@@ -198,7 +204,7 @@ func shell(check *Check) {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			modified = time.Now()
+			etag()
 			msg := string(out) + err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
 			alert(check, &name, &msg)
@@ -231,7 +237,7 @@ func web(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
-			modified = time.Now()
+			etag()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
 
@@ -240,7 +246,7 @@ func web(check *Check) {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			modified = time.Now()
+			etag()
 			msg := err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
 			alert(check, &name, &msg)
@@ -353,13 +359,13 @@ func getVersion(w http.ResponseWriter, r *http.Request) {
 func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
 	h := w.Header()
 	h.Set("Server", "jsonmon")
-	if t, err := time.Parse(time.RFC1123, r.Header.Get("If-Modified-Since")); err == nil && modified.Before(t.Add(1*time.Second)) {
+	if r.Header.Get("If-None-Match") == modified {
 		delete(h, "Content-Type")
 		delete(h, "Content-Length")
 		w.WriteHeader(http.StatusNotModified)
 	} else {
 		h.Set("Cache-Control", "no-cache")
-		h.Set("Last-Modified", modified.UTC().Format(time.RFC1123))
+		h.Set("ETag", modified)
 		h.Set("Access-Control-Allow-Origin", "*")
 		h.Set("Content-Type", "application/json; charset=utf-8")
 		json, _ := json.MarshalIndent(&data, "", "  ")
