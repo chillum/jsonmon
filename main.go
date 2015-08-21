@@ -28,16 +28,17 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"regexp"
 	"runtime"
 	"strconv"
-	"sync"
+	"syscall"
 	"time"
 )
 
 // Application version.
-const Version = "1.2.1"
+const Version = "1.2.2"
 
 // This one is for internal use.
 type ver struct {
@@ -121,9 +122,14 @@ func main() {
 		fmt.Fprintln(os.Stderr, "ERROR:", config[0], err)
 		os.Exit(3)
 	}
+	// Exit with return code 0 on kill.
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGTERM)
+	go func() {
+		<-done
+		os.Exit(0)
+	}()
 	// Run checks.
-	var wg sync.WaitGroup
-	wg.Add(1)
 	etag()
 	for i := range checks {
 		go worker(&checks[i])
@@ -143,8 +149,7 @@ func main() {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR:", err)
 	}
-	// Wait forever.
-	wg.Wait()
+	os.Exit(4)
 }
 
 // Background worker.
