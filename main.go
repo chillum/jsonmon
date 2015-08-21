@@ -351,17 +351,17 @@ func getVersion(w http.ResponseWriter, r *http.Request) {
 
 // Output JSON.
 func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
-	w.Header().Set("Server", "jsonmon")
+	h := w.Header()
+	h.Set("Server", "jsonmon")
 	if t, err := time.Parse(time.RFC1123, r.Header.Get("If-Modified-Since")); err == nil && modified.Before(t.Add(1*time.Second)) {
-		h := w.Header()
 		delete(h, "Content-Type")
 		delete(h, "Content-Length")
 		w.WriteHeader(http.StatusNotModified)
 	} else {
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Last-Modified", modified.UTC().Format(time.RFC1123))
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		h.Set("Cache-Control", "no-cache")
+		h.Set("Last-Modified", modified.UTC().Format(time.RFC1123))
+		h.Set("Access-Control-Allow-Origin", "*")
+		h.Set("Content-Type", "application/json; charset=utf-8")
 		json, _ := json.MarshalIndent(&data, "", "  ")
 		w.Write(json)
 		fmt.Fprintln(w, "") // Trailing newline.
