@@ -12,9 +12,6 @@ Environment:
  PORT
   - defaults to 3000
   - the JSON API port
- GOMAXPROCS
-  - defaults to CPU number + 1
-  - number of threads to start
 */
 package main
 
@@ -109,7 +106,7 @@ func main() {
 	}
 	// Tune concurrency.
 	if os.Getenv("GOMAXPROCS") == "" {
-		runtime.GOMAXPROCS(runtime.NumCPU() + 1)
+		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 	// Read config file or exit with error.
 	config, err := ioutil.ReadFile(os.Args[1])
