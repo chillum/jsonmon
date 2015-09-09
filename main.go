@@ -35,7 +35,7 @@ import (
 )
 
 // Application version.
-const Version = "1.2.2"
+const Version = "1.2.3"
 
 // This one is for internal use.
 type ver struct {
@@ -187,7 +187,7 @@ func shell(check *Check) {
 				var regex *regexp.Regexp
 				regex, err = regexp.Compile(check.Match)
 				if err == nil && !regex.Match(out) {
-					err = errors.New("ERROR: output did not match " + check.Match)
+					err = errors.New("Expected:\n" + check.Match + "\n\nGot:\n" + string(out))
 				}
 			}
 			break
@@ -272,7 +272,7 @@ func fetch(url string, match string, code int) error {
 					var body []byte
 					body, _ = ioutil.ReadAll(resp.Body)
 					if !regex.Match(body) {
-						err = errors.New(url + " output did not match " + match)
+						err = errors.New("Expected:\n" + match + "\n\nGot:\n" + string(body))
 					}
 				}
 			}
