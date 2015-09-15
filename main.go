@@ -268,7 +268,8 @@ func fetch(url string, match string, code int) error {
 		resp, err = client.Do(req)
 		if err == nil {
 			if resp.StatusCode != code { // Check status code.
-				err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
+				err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode) +
+					" (expected " + strconv.Itoa(code) + ")")
 			} else { // Match regexp.
 				if resp != nil && match != "" {
 					var regex *regexp.Regexp
