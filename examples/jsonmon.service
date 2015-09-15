@@ -10,5 +10,8 @@ Restart          = always
 #Environment=HOST=localhost
 #Environment=PORT=3000
 
+# Optional Referer header used in Web checks:
+#Environment=URL=http://jsonmon.example.net
+
 [Install]
 WantedBy  = default.target

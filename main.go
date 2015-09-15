@@ -12,6 +12,8 @@ Environment:
  PORT
   - defaults to 3000
   - the JSON API port
+ URL
+  - optional Web checks' Referer header
 */
 package main
 
@@ -35,7 +37,7 @@ import (
 )
 
 // Application version.
-const Version = "1.2.4"
+const Version = "1.2.5"
 
 // This one is for internal use.
 type ver struct {
@@ -72,6 +74,9 @@ var modified string
 func etag() {
 	modified = "W/\"" + strconv.FormatInt(time.Now().UnixNano(), 10) + "\""
 }
+
+// Referer header to use in Web checks.
+var referer = os.Getenv("URL")
 
 // The main loop.
 func main() {
@@ -265,6 +270,9 @@ func fetch(url string, match string, code int) error {
 	req, err = http.NewRequest("GET", url, nil)
 	if err == nil {
 		req.Header.Set("User-Agent", "jsonmon")
+		if referer != "" {
+			req.Header.Set("Referer", referer)
+		}
 		resp, err = client.Do(req)
 		if err == nil {
 			if resp.StatusCode != code { // Check status code.
