@@ -35,7 +35,7 @@ import (
 )
 
 // Application version.
-const Version = "1.2.3"
+const Version = "1.2.4"
 
 // This one is for internal use.
 type ver struct {
@@ -260,19 +260,25 @@ func web(check *Check) {
 func fetch(url string, match string, code int) error {
 	var err error
 	var resp *http.Response
-	resp, err = http.Get(url)
+	var req *http.Request
+	client := &http.Client{}
+	req, err = http.NewRequest("GET", url, nil)
 	if err == nil {
-		if resp.StatusCode != code { // Check status code.
-			err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
-		} else { // Match regexp.
-			if resp != nil && match != "" {
-				var regex *regexp.Regexp
-				regex, err = regexp.Compile(match)
-				if err == nil {
-					var body []byte
-					body, _ = ioutil.ReadAll(resp.Body)
-					if !regex.Match(body) {
-						err = errors.New("Expected:\n" + match + "\n\nGot:\n" + string(body))
+		req.Header.Set("User-Agent", "jsonmon")
+		resp, err = client.Do(req)
+		if err == nil {
+			if resp.StatusCode != code { // Check status code.
+				err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
+			} else { // Match regexp.
+				if resp != nil && match != "" {
+					var regex *regexp.Regexp
+					regex, err = regexp.Compile(match)
+					if err == nil {
+						var body []byte
+						body, _ = ioutil.ReadAll(resp.Body)
+						if !regex.Match(body) {
+							err = errors.New("Expected:\n" + match + "\n\nGot:\n" + string(body))
+						}
 					}
 				}
 			}
