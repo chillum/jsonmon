@@ -100,7 +100,7 @@ func main() {
 	case "-version":
 		fallthrough
 	case "--version":
-		json, _ := json.MarshalIndent(&version, "", "  ")
+		json, _ := json.Marshal(&version)
 		fmt.Println(string(json))
 		os.Exit(0)
 	}
