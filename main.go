@@ -37,7 +37,7 @@ import (
 )
 
 // Application version.
-const Version = "1.2.7"
+const Version = "1.2.8"
 
 // This one is for internal use.
 type ver struct {
@@ -261,12 +261,24 @@ func web(check *Check) {
 	}
 }
 
+// Check HTTP redirects.
+func redirect(req *http.Request, via []*http.Request) error {
+	// When redirects number > 10 probably there's a problem.
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	// Redirects don't get User-Agent.
+	req.Header.Set("User-Agent", "jsonmon")
+	return nil
+}
+
 // The actual HTTP GET.
 func fetch(url string, match string, code int) error {
 	var err error
 	var resp *http.Response
 	var req *http.Request
 	client := &http.Client{}
+	client.CheckRedirect = redirect
 	req, err = http.NewRequest("GET", url, nil)
 	if err == nil {
 		req.Header.Set("User-Agent", "jsonmon")
