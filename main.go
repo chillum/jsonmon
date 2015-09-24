@@ -37,7 +37,7 @@ import (
 )
 
 // Application version.
-const Version = "1.2.5"
+const Version = "1.2.6"
 
 // This one is for internal use.
 type ver struct {
@@ -276,8 +276,7 @@ func fetch(url string, match string, code int) error {
 		resp, err = client.Do(req)
 		if err == nil {
 			if resp.StatusCode != code { // Check status code.
-				err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode) +
-					" (expected " + strconv.Itoa(code) + ")")
+				err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
 			} else { // Match regexp.
 				if resp != nil && match != "" {
 					var regex *regexp.Regexp
