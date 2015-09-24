@@ -37,7 +37,7 @@ import (
 )
 
 // Application version.
-const Version = "1.2.6"
+const Version = "1.2.7"
 
 // This one is for internal use.
 type ver struct {
@@ -319,7 +319,7 @@ func notify(mail interface{}, subject string, message *string) {
 				rcpt += v.(string)
 			}
 		}
-		msg := "To: " + rcpt + "\nSubject: " + subject + "\n\n"
+		msg := "To: " + rcpt + "\nSubject: " + subject + "\nX-Mailer: jsonmon\n\n"
 		if message != nil {
 			msg += *message
 		}
