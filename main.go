@@ -35,7 +35,7 @@ import (
 )
 
 // Application version.
-const Version = "1.2.9"
+const Version = "1.3"
 
 // This one is for internal use.
 type ver struct {
@@ -153,7 +153,7 @@ func main() {
 func worker(check *Check) {
 	for {
 		if check.Repeat == 0 { // Set default timeout.
-			check.Repeat = 60
+			check.Repeat = 30
 		}
 		if check.Tries == 0 { // Default to 1 attempt.
 			check.Tries = 1
