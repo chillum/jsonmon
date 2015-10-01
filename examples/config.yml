@@ -9,7 +9,7 @@
 # Checks once in 10 seconds:
 - web:    http://192.168.6.1
   repeat: 10
-  return: 403  # Should return HTTP 403.
+  return: 401  # Should return HTTP 401.
   alert:  ./slack.sh
   notify: me@localhost
 # Pings once in 2 seconds:
