@@ -13,7 +13,7 @@
   <array>
     <string>/bin/sh</string>
     <string>-c</string>
-    <string>$HOME/Go/bin/jsonmon $HOME/.config/jsonmon.yml 2>&1 |/usr/bin/logger -p user.notice -t jsonmon</string>
+    <string>$HOME/Go/bin/jsonmon $HOME/.config/jsonmon.yml 2>&amp;1 |/usr/bin/logger -p user.notice -t jsonmon</string>
   </array>
 </dict>
 </plist>
