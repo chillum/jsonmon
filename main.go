@@ -35,7 +35,7 @@ import (
 )
 
 // Application version.
-const Version = "1.3"
+const Version = "1.3.1"
 
 // This one is for internal use.
 type ver struct {
@@ -55,7 +55,7 @@ type Check struct {
 	Match  string      `json:"-" yaml:"match"`
 	Return int         `json:"-" yaml:"return"`
 	Notify interface{} `json:"-" yaml:"notify"`
-	Alert  interface{} `json:"-", yaml:"alert`
+	Alert  interface{} `json:"-" yaml:"alert"`
 	Tries  int         `json:"-" yaml:"tries"`
 	Repeat int         `json:"-" yaml:"repeat"`
 	Failed bool        `json:"failed" yaml:"-"`
@@ -111,12 +111,14 @@ func main() {
 	// Read config file or exit with error.
 	config, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "ERROR:", err)
+		fmt.Fprint(os.Stderr, "<2>")
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(3)
 	}
 	err = yaml.Unmarshal(config, &checks)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "ERROR:", config[0], err)
+		fmt.Fprint(os.Stderr, "<2>")
+		fmt.Fprintln(os.Stderr, "invalid", os.Args[1])
 		os.Exit(3)
 	}
 	// Exit with return code 0 on kill.
@@ -144,7 +146,8 @@ func main() {
 	http.HandleFunc("/", getChecks)
 	err = http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "ERROR:", err)
+		fmt.Fprint(os.Stderr, "<2>")
+		fmt.Fprintln(os.Stderr, err)
 	}
 	os.Exit(4)
 }
@@ -305,10 +308,10 @@ func fetch(url string, match string, code int) error {
 // Logs and mail alerting.
 func notify(mail interface{}, subject string, message *string) {
 	// Log the alerts.
-	if message == nil {
-		fmt.Println(subject)
-	} else {
-		fmt.Println(subject + "\n" + *message)
+	fmt.Print("<5>")
+	fmt.Println(subject)
+	if message != nil {
+		fmt.Println(*message)
 	}
 	// Mail the alerts.
 	if mail != nil {
@@ -333,7 +336,8 @@ func notify(mail interface{}, subject string, message *string) {
 		stdin, _ := sendmail.StdinPipe()
 		err := sendmail.Start()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "ERROR:", err)
+			fmt.Fprint(os.Stderr, "<3>")
+			fmt.Fprintln(os.Stderr, err)
 		}
 		io.WriteString(stdin, msg)
 		sendmail.Wait()
@@ -347,13 +351,17 @@ func alert(check *Check, name *string, msg *string) {
 		if ok { // check.Alert is a string.
 			out, err := exec.Command(plugin, strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
 			if err != nil {
-				fmt.Fprintln(os.Stderr, "ERROR:", string(out)+err.Error())
+				fmt.Fprint(os.Stderr, "<3>", plugin, " failed\n")
+				fmt.Fprint(os.Stderr, string(out))
+				fmt.Fprintln(os.Stderr, err.Error())
 			}
 		} else { // check.Alert is a list.
 			for _, i := range check.Alert.([]interface{}) {
 				out, err := exec.Command(i.(string), strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
 				if err != nil {
-					fmt.Fprintln(os.Stderr, "ERROR:", string(out)+err.Error())
+					fmt.Fprint(os.Stderr, "<3>", i.(string), " failed\n")
+					fmt.Fprint(os.Stderr, string(out))
+					fmt.Fprintln(os.Stderr, err.Error())
 				}
 			}
 		}
