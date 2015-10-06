@@ -35,7 +35,7 @@ import (
 )
 
 // Application version.
-const Version = "1.3.3"
+const Version = "1.3.4"
 
 // This one is for internal use.
 type ver struct {
@@ -111,12 +111,12 @@ func main() {
 	// Read config file or exit with error.
 	config, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		fmt.Fprint(os.Stderr, crit, err, "\n")
+		fmt.Fprint(os.Stderr, "<2>", err, "\n")
 		os.Exit(3)
 	}
 	err = yaml.Unmarshal(config, &checks)
 	if err != nil {
-		fmt.Fprint(os.Stderr, crit, "invalid config at ", os.Args[1], "\n")
+		fmt.Fprint(os.Stderr, "<2>", "invalid config at ", os.Args[1], "\n")
 		os.Exit(3)
 	}
 	// Exit with return code 0 on kill.
@@ -144,7 +144,7 @@ func main() {
 	http.HandleFunc("/", getChecks)
 	err = http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
-		fmt.Fprint(os.Stderr, crit, err, "\n")
+		fmt.Fprint(os.Stderr, "<2>", err, "\n")
 	}
 	os.Exit(4)
 }
@@ -306,9 +306,9 @@ func fetch(url string, match string, code int) error {
 func notify(mail interface{}, subject string, message *string) {
 	// Log the alerts.
 	if message == nil {
-		fmt.Print(note, subject, "\n")
+		fmt.Print("<5>", subject, "\n")
 	} else {
-		fmt.Print(note, subject, "\n", *message, "\n")
+		fmt.Print("<5>", subject, "\n", *message, "\n")
 	}
 	// Mail the alerts.
 	if mail != nil {
@@ -333,7 +333,7 @@ func notify(mail interface{}, subject string, message *string) {
 		stdin, _ := sendmail.StdinPipe()
 		err := sendmail.Start()
 		if err != nil {
-			fmt.Fprint(os.Stderr, errr, err, "\n")
+			fmt.Fprint(os.Stderr, "<3>", err, "\n")
 		}
 		io.WriteString(stdin, msg)
 		sendmail.Wait()
@@ -347,13 +347,13 @@ func alert(check *Check, name *string, msg *string) {
 		if ok { // check.Alert is a string.
 			out, err := exec.Command(plugin, strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
 			if err != nil {
-				fmt.Fprint(os.Stderr, errr, plugin, " failed\n", string(out), err.Error(), "\n")
+				fmt.Fprint(os.Stderr, "<3>", plugin, " failed\n", string(out), err.Error(), "\n")
 			}
 		} else { // check.Alert is a list.
 			for _, i := range check.Alert.([]interface{}) {
 				out, err := exec.Command(i.(string), strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
 				if err != nil {
-					fmt.Fprint(os.Stderr, errr, i, " failed\n", string(out), err.Error(), "\n")
+					fmt.Fprint(os.Stderr, "<3>", i, " failed\n", string(out), err.Error(), "\n")
 				}
 			}
 		}
