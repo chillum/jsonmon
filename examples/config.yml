@@ -10,7 +10,7 @@
 - web:    http://192.168.6.1
   repeat: 10
   return: 401  # Should return HTTP 401.
-  alert:  ./slack.sh
+  alert:  ./slack
   notify: me@localhost
 # Pings once in 2 seconds:
 - shell:  ping -c 1 192.168.6.1
