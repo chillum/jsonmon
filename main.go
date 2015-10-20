@@ -35,7 +35,7 @@ import (
 )
 
 // Application version.
-const Version = "2"
+const Version = "2.0.1"
 
 // This one is for internal use.
 type ver struct {
@@ -363,7 +363,10 @@ func alert(check *Check, name *string, msg *string) {
 
 // 404 error.
 func notFound(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Server", "jsonmon")
+	h := w.Header()
+	h.Set("Server", "jsonmon")
+	h.Set("X-Frame-Options", "DENY")
+	h.Set("X-XSS-Protection", "1; mode=block")
 	http.NotFound(w, r)
 }
 
@@ -381,6 +384,8 @@ func getVersion(w http.ResponseWriter, r *http.Request) {
 func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
 	h := w.Header()
 	h.Set("Server", "jsonmon")
+    h.Set("X-Frame-Options", "DENY")
+	h.Set("X-XSS-Protection", "1; mode=block")
 	h.Set("X-Content-Type-Options", "nosniff")
 	if r.Header.Get("If-None-Match") == modified {
 		delete(h, "Content-Type")
