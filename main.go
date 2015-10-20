@@ -384,7 +384,7 @@ func getVersion(w http.ResponseWriter, r *http.Request) {
 func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
 	h := w.Header()
 	h.Set("Server", "jsonmon")
-    h.Set("X-Frame-Options", "DENY")
+	h.Set("X-Frame-Options", "DENY")
 	h.Set("X-XSS-Protection", "1; mode=block")
 	h.Set("X-Content-Type-Options", "nosniff")
 	if r.Header.Get("If-None-Match") == modified {
