@@ -35,7 +35,7 @@ import (
 )
 
 // Application version.
-const Version = "1.3.4"
+const Version = "2"
 
 // This one is for internal use.
 type ver struct {
@@ -140,8 +140,9 @@ func main() {
 	if port == "" {
 		port = "3000"
 	}
+	http.HandleFunc("/status", getChecks)
 	http.HandleFunc("/version", getVersion)
-	http.HandleFunc("/", getChecks)
+	http.HandleFunc("/", notFound)
 	err = http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
 		fmt.Fprint(os.Stderr, "<2>", err, "\n")
@@ -360,13 +361,14 @@ func alert(check *Check, name *string, msg *string) {
 	}
 }
 
+// 404 error.
+func notFound(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Server", "jsonmon")
+	http.NotFound(w, r)
+}
+
 // Display checks' details.
 func getChecks(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" { // Serve for root page only, 404 otherwise.
-		w.Header().Set("Server", "jsonmon")
-		http.NotFound(w, r)
-		return
-	}
 	displayJSON(w, r, &checks)
 }
 
@@ -379,6 +381,7 @@ func getVersion(w http.ResponseWriter, r *http.Request) {
 func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
 	h := w.Header()
 	h.Set("Server", "jsonmon")
+	h.Set("X-Content-Type-Options", "nosniff")
 	if r.Header.Get("If-None-Match") == modified {
 		delete(h, "Content-Type")
 		delete(h, "Content-Length")
