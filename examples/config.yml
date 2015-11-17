@@ -6,18 +6,21 @@
   web:    https://ya.ru
   match:  Найти # Regexp to match in response.
   tries:  3     # Optional attempts number.
+
 # Checks once in 10 seconds:
 - web:    http://192.168.6.1
   repeat: 10
   return: 401  # Should return HTTP 401.
   alert:  ./slack
   notify: me@localhost
+
 # Pings once in 2 seconds:
 - shell:  ping -c 1 192.168.6.1
   repeat: 2
   notify:
     - me@localhost
     - sales@server
+
 # This check fails if ping succeeds:
 - shell:  ping -c 1 192.168.7.1; [ $? = 1 -o $? = 2 ]
   alert:
