@@ -35,7 +35,7 @@ import (
 )
 
 // Application version.
-const Version = "2.0.1"
+const Version = "2.0.2"
 
 // This one is for internal use.
 type ver struct {
@@ -65,12 +65,13 @@ type Check struct {
 // Global checks list. Need to share it with workers and Web UI.
 var checks []Check
 
-// Global last modified date for HTTP caching.
+// Global started and last modified date for HTTP caching.
 var modified string
+var started string
 
 // Construct the last modified string.
-func etag() {
-	modified = "W/\"" + strconv.FormatInt(time.Now().UnixNano(), 10) + "\""
+func etag() string{
+	return "W/\"" + strconv.FormatInt(time.Now().UnixNano(), 10) + "\""
 }
 
 // The main loop.
@@ -127,7 +128,8 @@ func main() {
 		os.Exit(0)
 	}()
 	// Run checks.
-	etag()
+	started = etag()
+	modified = started
 	for i := range checks {
 		go worker(&checks[i])
 	}
@@ -199,7 +201,7 @@ func shell(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
-			etag()
+			modified = etag()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
 		}
@@ -207,7 +209,7 @@ func shell(check *Check) {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			etag()
+			modified = etag()
 			msg := string(out) + err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
 			alert(check, &name, &msg)
@@ -240,7 +242,7 @@ func web(check *Check) {
 		if check.Failed {
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
-			etag()
+			modified = etag()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
 
@@ -249,7 +251,7 @@ func web(check *Check) {
 		if !check.Failed {
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
-			etag()
+			modified = etag()
 			msg := err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
 			alert(check, &name, &msg)
@@ -372,28 +374,28 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 // Display checks' details.
 func getChecks(w http.ResponseWriter, r *http.Request) {
-	displayJSON(w, r, &checks)
+	displayJSON(w, r, &checks, &modified)
 }
 
 // Display application version.
 func getVersion(w http.ResponseWriter, r *http.Request) {
-	displayJSON(w, r, &version)
+	displayJSON(w, r, &version, &started)
 }
 
 // Output JSON.
-func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
+func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache *string) {
 	h := w.Header()
 	h.Set("Server", "jsonmon")
 	h.Set("X-Frame-Options", "DENY")
 	h.Set("X-XSS-Protection", "1; mode=block")
 	h.Set("X-Content-Type-Options", "nosniff")
-	if r.Header.Get("If-None-Match") == modified {
+	if r.Header.Get("If-None-Match") == *cache {
 		delete(h, "Content-Type")
 		delete(h, "Content-Length")
 		w.WriteHeader(http.StatusNotModified)
 	} else {
 		h.Set("Cache-Control", "no-cache")
-		h.Set("ETag", modified)
+		h.Set("ETag", *cache)
 		h.Set("Access-Control-Allow-Origin", "*")
 		h.Set("Content-Type", "application/json; charset=utf-8")
 		json, _ := json.Marshal(&data)
