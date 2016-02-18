@@ -396,8 +396,7 @@ func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}) {
 		h.Set("ETag", modified)
 		h.Set("Access-Control-Allow-Origin", "*")
 		h.Set("Content-Type", "application/json; charset=utf-8")
-		json, _ := json.MarshalIndent(&data, "", "  ")
+		json, _ := json.Marshal(&data)
 		w.Write(json)
-		fmt.Fprintln(w, "") // Trailing newline.
 	}
 }
