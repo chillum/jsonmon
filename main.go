@@ -108,10 +108,6 @@ func main() {
 		fmt.Println(string(json))
 		os.Exit(0)
 	}
-	// Tune concurrency.
-	if os.Getenv("GOMAXPROCS") == "" {
-		runtime.GOMAXPROCS(runtime.NumCPU())
-	}
 	// Read config file or exit with error.
 	config, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
@@ -404,10 +400,10 @@ func getVersion(w http.ResponseWriter, r *http.Request) {
 
 // Output JSON.
 func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache *string, lock bool) {
-	h := w.Header()
-	h.Set("Server", "jsonmon")
 	var cached bool
 	var result []byte
+	h := w.Header()
+	h.Set("Server", "jsonmon")
 	if lock {
 		mutex.RLock()
 	}
