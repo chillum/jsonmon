@@ -73,8 +73,8 @@ var started string
 var mutex *sync.RWMutex
 
 // Construct the last modified string.
-func etag() string {
-	return "W/\"" + strconv.FormatInt(time.Now().UnixNano(), 10) + "\""
+func etag(ts time.Time) string {
+	return "W/\"" + strconv.FormatInt(ts.UnixNano(), 10) + "\""
 }
 
 // The main loop.
@@ -131,7 +131,7 @@ func main() {
 		os.Exit(0)
 	}()
 	// Run checks.
-	started = etag()
+	started = etag(time.Now())
 	modified = started
 	mutex = &sync.RWMutex{}
 	for i := range checks {
@@ -207,20 +207,22 @@ func shell(check *Check) {
 	// Process results.
 	if err == nil {
 		if check.Failed {
+			ts := time.Now()
 			mutex.Lock()
 			check.Failed = false
-			check.Since = time.Now().Format(time.RFC3339)
-			modified = etag()
+			check.Since = ts.Format(time.RFC3339)
+			modified = etag(ts)
 			mutex.Unlock()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
 		}
 	} else {
 		if !check.Failed {
+			ts := time.Now()
 			mutex.Lock()
 			check.Failed = true
-			check.Since = time.Now().Format(time.RFC3339)
-			modified = etag()
+			check.Since = ts.Format(time.RFC3339)
+			modified = etag(ts)
 			mutex.Unlock()
 			msg := string(out) + err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
@@ -252,10 +254,11 @@ func web(check *Check) {
 	// Process results.
 	if err == nil {
 		if check.Failed {
+			ts := time.Now()
 			mutex.Lock()
 			check.Failed = false
-			check.Since = time.Now().Format(time.RFC3339)
-			modified = etag()
+			check.Since = ts.Format(time.RFC3339)
+			modified = etag(ts)
 			mutex.Unlock()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
@@ -263,10 +266,11 @@ func web(check *Check) {
 		}
 	} else {
 		if !check.Failed {
+			ts := time.Now()
 			mutex.Lock()
 			check.Failed = true
-			check.Since = time.Now().Format(time.RFC3339)
-			modified = etag()
+			check.Since = ts.Format(time.RFC3339)
+			modified = etag(ts)
 			mutex.Unlock()
 			msg := err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
