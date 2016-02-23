@@ -411,7 +411,7 @@ func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache
 	if r.Header.Get("If-None-Match") == *cache {
 		delete(h, "Content-Type")
 		delete(h, "Content-Length")
-		w.WriteHeader(http.StatusNotModified)
+		defer w.WriteHeader(http.StatusNotModified)
 	} else {
 		h.Set("Cache-Control", "no-cache")
 		h.Set("ETag", *cache)
