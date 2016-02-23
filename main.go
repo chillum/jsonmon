@@ -408,7 +408,6 @@ func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache
 	h.Set("Server", "jsonmon")
 	h.Set("X-Frame-Options", "DENY")
 	h.Set("X-XSS-Protection", "1; mode=block")
-	h.Set("X-Content-Type-Options", "nosniff")
 	var cached bool
 	var result []byte
 	if lock {
@@ -425,11 +424,10 @@ func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache
 	}
 	if cached {
 		w.WriteHeader(http.StatusNotModified)
-		delete(h, "Content-Type")
-		delete(h, "Content-Length")
 	} else {
 		h.Set("Cache-Control", "no-cache")
 		h.Set("Access-Control-Allow-Origin", "*")
+		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Content-Type", "application/json; charset=utf-8")
 		w.Write(result)
 	}
