@@ -30,12 +30,13 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 )
 
 // Application version.
-const Version = "2.0.2"
+const Version = "2.0.3"
 
 // This one is for internal use.
 type ver struct {
@@ -69,8 +70,10 @@ var checks []Check
 var modified string
 var started string
 
+var mutex *sync.RWMutex
+
 // Construct the last modified string.
-func etag() string{
+func etag() string {
 	return "W/\"" + strconv.FormatInt(time.Now().UnixNano(), 10) + "\""
 }
 
@@ -130,10 +133,12 @@ func main() {
 	// Run checks.
 	started = etag()
 	modified = started
+	mutex = &sync.RWMutex{}
 	for i := range checks {
 		go worker(&checks[i])
 	}
 	// Launch the JSON API.
+	// Probably should do it prior to checks.
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 	if host == "" {
@@ -154,20 +159,23 @@ func main() {
 
 // Background worker.
 func worker(check *Check) {
+	mutex.Lock()
+	if check.Repeat == 0 { // Set default timeout.
+		check.Repeat = 30
+	}
+	if check.Tries == 0 { // Default to 1 attempt.
+		check.Tries = 1
+	}
+	mutex.Unlock()
+	sleep := time.Second * time.Duration(check.Repeat)
 	for {
-		if check.Repeat == 0 { // Set default timeout.
-			check.Repeat = 30
-		}
-		if check.Tries == 0 { // Default to 1 attempt.
-			check.Tries = 1
-		}
 		if check.Web != "" {
 			web(check)
 		}
 		if check.Shell != "" {
 			shell(check)
 		}
-		time.Sleep(time.Second * time.Duration(check.Repeat))
+		time.Sleep(sleep)
 	}
 }
 
@@ -199,17 +207,21 @@ func shell(check *Check) {
 	// Process results.
 	if err == nil {
 		if check.Failed {
+			mutex.Lock()
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
 			modified = etag()
+			mutex.Unlock()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
 		}
 	} else {
 		if !check.Failed {
+			mutex.Lock()
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
 			modified = etag()
+			mutex.Unlock()
 			msg := string(out) + err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
 			alert(check, &name, &msg)
@@ -240,18 +252,22 @@ func web(check *Check) {
 	// Process results.
 	if err == nil {
 		if check.Failed {
+			mutex.Lock()
 			check.Failed = false
 			check.Since = time.Now().Format(time.RFC3339)
 			modified = etag()
+			mutex.Unlock()
 			notify(check.Notify, "Fixed: "+name, nil)
 			alert(check, &name, nil)
 
 		}
 	} else {
 		if !check.Failed {
+			mutex.Lock()
 			check.Failed = true
 			check.Since = time.Now().Format(time.RFC3339)
 			modified = etag()
+			mutex.Unlock()
 			msg := err.Error()
 			notify(check.Notify, "Failed: "+name, &msg)
 			alert(check, &name, &msg)
@@ -374,7 +390,9 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 // Display checks' details.
 func getChecks(w http.ResponseWriter, r *http.Request) {
+	mutex.RLock()
 	displayJSON(w, r, &checks, &modified)
+	mutex.RUnlock()
 }
 
 // Display application version.
