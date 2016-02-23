@@ -4,10 +4,11 @@
 After      = network.target
 
 [Service]
-WorkingDirectory = /etc/jsonmon
 User             = jsonmon
+WorkingDirectory = /etc/jsonmon
 ExecStart        = /usr/local/bin/jsonmon config.yml
 Restart          = always
+LimitNOFILE      = 10240
 
 # The JSON API host & port:
 #Environment = HOST=localhost

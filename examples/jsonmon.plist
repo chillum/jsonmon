@@ -15,5 +15,10 @@
     <string>-c</string>
     <string>$HOME/Go/bin/jsonmon $HOME/.config/jsonmon.yml 2>&amp;1 |/usr/bin/logger -p user.notice -t jsonmon</string>
   </array>
+  <key>SoftResourceLimits</key>
+  <dict>
+    <key>NumberOfFiles</key>
+    <integer>10240</integer>
+  </dict>
 </dict>
 </plist>
