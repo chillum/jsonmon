@@ -409,16 +409,16 @@ func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache
 		mutex.RLock()
 	}
 	if r.Header.Get("If-None-Match") == *cache {
-		delete(h, "Content-Type")
-		delete(h, "Content-Length")
 		defer w.WriteHeader(http.StatusNotModified)
+		defer delete(h, "Content-Type")
+		defer delete(h, "Content-Length")
 	} else {
-		h.Set("Cache-Control", "no-cache")
-		h.Set("ETag", *cache)
-		h.Set("Access-Control-Allow-Origin", "*")
-		h.Set("Content-Type", "application/json; charset=utf-8")
 		json, _ := json.Marshal(&data)
 		defer w.Write(json)
+		defer h.Set("Cache-Control", "no-cache")
+		defer h.Set("ETag", *cache)
+		defer h.Set("Access-Control-Allow-Origin", "*")
+		defer h.Set("Content-Type", "application/json; charset=utf-8")
 	}
 	if lock {
 		mutex.RUnlock()
