@@ -419,8 +419,8 @@ func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache
 	} else {
 		json, _ := json.Marshal(&data)
 		defer w.Write(json)
+		h.Set("ETag", *cache)
 		defer h.Set("Cache-Control", "no-cache")
-		defer h.Set("ETag", *cache)
 		defer h.Set("Access-Control-Allow-Origin", "*")
 		defer h.Set("Content-Type", "application/json; charset=utf-8")
 	}
