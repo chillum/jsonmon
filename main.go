@@ -36,7 +36,7 @@ import (
 )
 
 // Application version.
-const Version = "2.0.3"
+const Version = "2.0.4"
 
 // This one is for internal use.
 type ver struct {
@@ -390,23 +390,24 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 // Display checks' details.
 func getChecks(w http.ResponseWriter, r *http.Request) {
-	mutex.RLock()
-	displayJSON(w, r, &checks, &modified)
-	mutex.RUnlock()
+	displayJSON(w, r, &checks, &modified, true)
 }
 
 // Display application version.
 func getVersion(w http.ResponseWriter, r *http.Request) {
-	displayJSON(w, r, &version, &started)
+	displayJSON(w, r, &version, &started, false)
 }
 
 // Output JSON.
-func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache *string) {
+func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache *string, lock bool) {
 	h := w.Header()
 	h.Set("Server", "jsonmon")
 	h.Set("X-Frame-Options", "DENY")
 	h.Set("X-XSS-Protection", "1; mode=block")
 	h.Set("X-Content-Type-Options", "nosniff")
+	if lock {
+		mutex.RLock()
+	}
 	if r.Header.Get("If-None-Match") == *cache {
 		delete(h, "Content-Type")
 		delete(h, "Content-Length")
@@ -417,6 +418,9 @@ func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache
 		h.Set("Access-Control-Allow-Origin", "*")
 		h.Set("Content-Type", "application/json; charset=utf-8")
 		json, _ := json.Marshal(&data)
-		w.Write(json)
+		defer w.Write(json)
+	}
+	if lock {
+		mutex.RUnlock()
 	}
 }
