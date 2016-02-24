@@ -6,12 +6,10 @@ Usage:
  jsonmon -v # Prints version to stdout and exits
 
 Environment:
- HOST
-  - defaults to localhost
-  - the JSON API network interface
- PORT
-  - defaults to 3000
-  - the JSON API port
+ HOST: the JSON API network interface, defaults to localhost
+ PORT: the JSON API port, defaults to 3000
+
+More docs: https://github.com/chillum/jsonmon/wiki
 */
 package main
 
