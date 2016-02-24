@@ -134,7 +134,6 @@ func main() {
 		go worker(&checks[i])
 	}
 	// Launch the JSON API.
-	// Probably should do it prior to checks.
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 	if host == "" {
