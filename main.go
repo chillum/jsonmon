@@ -34,7 +34,7 @@ import (
 )
 
 // Application version.
-const Version = "2.0.6"
+const Version = "2.0.7"
 
 // This one is for internal use.
 type ver struct {
@@ -380,8 +380,6 @@ func alert(check *Check, name *string, msg *string) {
 func notFound(w http.ResponseWriter, r *http.Request) {
 	h := w.Header()
 	h.Set("Server", "jsonmon")
-	h.Set("X-Frame-Options", "DENY")
-	h.Set("X-XSS-Protection", "1; mode=block")
 	http.NotFound(w, r)
 }
 
@@ -418,8 +416,6 @@ func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache
 	} else {
 		h.Set("Cache-Control", "no-cache")
 		h.Set("Access-Control-Allow-Origin", "*")
-		h.Set("X-Frame-Options", "DENY")
-		h.Set("X-XSS-Protection", "1; mode=block")
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("Content-Type", "application/json; charset=utf-8")
 		w.Write(result)
