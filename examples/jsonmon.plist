@@ -1,5 +1,5 @@
-<!-- jsonmon service for launchd -->
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- jsonmon service for launchd -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -19,6 +19,16 @@
   <dict>
     <key>NumberOfFiles</key>
     <integer>10240</integer>
+  </dict>
+  <!-- The JSON API host & port -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!--key>HOST</key>
+    <string>0.0.0.0</string-->
+    <key>HOST</key>
+    <string>localhost</string>
+    <key>PORT</key>
+    <string>3000</string>
   </dict>
 </dict>
 </plist>

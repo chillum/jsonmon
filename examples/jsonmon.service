@@ -11,8 +11,9 @@ Restart          = always
 LimitNOFILE      = 10240
 
 # The JSON API host & port:
-#Environment = HOST=localhost
-#Environment = PORT=3000
+#Environment = HOST=0.0.0.0
+Environment = HOST=localhost
+Environment = PORT=3000
 
 [Install]
 WantedBy   = multi-user.target
