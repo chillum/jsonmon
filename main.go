@@ -34,7 +34,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "2.0.7"
+const Version = "2.0.8"
 
 // This one is for internal use.
 type ver struct {
@@ -109,12 +109,12 @@ func main() {
 	// Read config file or exit with error.
 	config, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<2>", err, "\n")
+		fmt.Fprint(os.Stderr, "<1>", err, "\n")
 		os.Exit(3)
 	}
 	err = yaml.Unmarshal(config, &checks)
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<2>", "invalid config at ", os.Args[1], "\n")
+		fmt.Fprint(os.Stderr, "<1>", "invalid config at ", os.Args[1], "\n")
 		os.Exit(3)
 	}
 	// Exit with return code 0 on kill.
@@ -145,7 +145,7 @@ func main() {
 	http.HandleFunc("/", notFound)
 	err = http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<2>", err, "\n")
+		fmt.Fprint(os.Stderr, "<1>", err, "\n")
 	}
 	os.Exit(4)
 }
@@ -163,9 +163,15 @@ func worker(check *Check) {
 	sleep := time.Second * time.Duration(check.Repeat)
 	for {
 		if check.Web != "" {
-			web(check)
-		}
-		if check.Shell != "" {
+			if check.Shell != "" {
+				fmt.Fprint(os.Stderr,
+					"<2>web and shell checks in one block are not allowed\n",
+					"<2>disabling: ", check.Shell, "\n",
+					"<2>disabling: ", check.Web, "\n")
+			} else {
+				web(check)
+			}
+		} else if check.Shell != "" {
 			shell(check)
 		}
 		time.Sleep(sleep)
