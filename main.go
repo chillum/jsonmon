@@ -165,9 +165,9 @@ func worker(check *Check) {
 		if check.Web != "" {
 			if check.Shell != "" {
 				fmt.Fprint(os.Stderr,
-					"<3>web and shell checks in one block are not allowed\n",
-					"<3>disabling: ", check.Shell, "\n",
-					"<3>disabling: ", check.Web, "\n")
+					"<3>Web and shell checks in one block are not allowed\n",
+					"<3>Disabled: ", check.Shell, "\n",
+					"<3>Disabled: ", check.Web, "\n")
 			} else {
 				web(check)
 			}
