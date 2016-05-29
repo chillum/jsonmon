@@ -34,7 +34,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "2.0.8"
+const Version = "2.0.9"
 
 // This one is for internal use.
 type ver struct {
@@ -253,7 +253,9 @@ func web(check *Check) {
 		name = check.Web
 	}
 	if check.Return == 0 { // Successful HTTP return code is 200.
+		mutex.Lock()
 		check.Return = 200
+		mutex.Unlock()
 	}
 	// Get the URL in N attempts.
 	var err error
