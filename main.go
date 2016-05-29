@@ -178,13 +178,16 @@ func worker(check *Check) {
 		return
 	}
 	sleep := time.Second * time.Duration(check.Repeat)
-	for {
-		if check.Web != "" {
+	if check.Web != "" {
+		for {
 			web(check)
-		} else if check.Shell != "" {
-			shell(check)
+			time.Sleep(sleep)
 		}
-		time.Sleep(sleep)
+	} else {
+		for {
+			shell(check)
+			time.Sleep(sleep)
+		}
 	}
 }
 
