@@ -168,7 +168,9 @@ func worker(check *Check) {
 					"<3>Web and shell checks in one block are not allowed\n",
 					"<3>Disabled: ", check.Shell, "\n",
 					"<3>Disabled: ", check.Web, "\n")
+				mutex.Lock()
 				check.Failed = true
+				mutex.Unlock()
 			} else {
 				web(check)
 			}
