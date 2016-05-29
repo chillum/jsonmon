@@ -160,20 +160,27 @@ func worker(check *Check) {
 		check.Tries = 1
 	}
 	mutex.Unlock()
+	if check.Shell == "" && check.Web == "" {
+		fmt.Fprintln(os.Stderr, "<4>Ignoring entry with no either Web or shell check")
+		mutex.Lock()
+		check.Failed = true
+		mutex.Unlock()
+		return
+	}
+	if check.Shell != "" && check.Web != "" {
+		fmt.Fprint(os.Stderr,
+			"<3>Web and shell checks in one block are not allowed\n",
+			"<3>Disabled: ", check.Shell, "\n",
+			"<3>Disabled: ", check.Web, "\n")
+		mutex.Lock()
+		check.Failed = true
+		mutex.Unlock()
+		return
+	}
 	sleep := time.Second * time.Duration(check.Repeat)
 	for {
 		if check.Web != "" {
-			if check.Shell != "" {
-				fmt.Fprint(os.Stderr,
-					"<3>Web and shell checks in one block are not allowed\n",
-					"<3>Disabled: ", check.Shell, "\n",
-					"<3>Disabled: ", check.Web, "\n")
-				mutex.Lock()
-				check.Failed = true
-				mutex.Unlock()
-			} else {
-				web(check)
-			}
+			web(check)
 		} else if check.Shell != "" {
 			shell(check)
 		}
