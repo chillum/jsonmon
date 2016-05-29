@@ -34,7 +34,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "2.0.9"
+const Version = "2.0.10"
 
 // This one is for internal use.
 type ver struct {
@@ -152,14 +152,6 @@ func main() {
 
 // Background worker.
 func worker(check *Check) {
-	mutex.Lock()
-	if check.Repeat == 0 { // Set default timeout.
-		check.Repeat = 30
-	}
-	if check.Tries == 0 { // Default to 1 attempt.
-		check.Tries = 1
-	}
-	mutex.Unlock()
 	if check.Shell == "" && check.Web == "" {
 		fmt.Fprintln(os.Stderr, "<4>Ignoring entry with no either Web or shell check")
 		mutex.Lock()
@@ -177,29 +169,46 @@ func worker(check *Check) {
 		mutex.Unlock()
 		return
 	}
+	mutex.Lock()
+	if check.Repeat == 0 { // Set default timeout.
+		check.Repeat = 30
+	}
+	if check.Tries == 0 { // Default to 1 attempt.
+		check.Tries = 1
+	}
+	mutex.Unlock()
 	sleep := time.Second * time.Duration(check.Repeat)
+	var name string
 	if check.Web != "" {
+		if check.Name != "" { // Set check's display name.
+			name = check.Name
+		} else {
+			name = check.Web
+		}
+		if check.Return == 0 { // Successful HTTP return code is 200.
+			mutex.Lock()
+			check.Return = 200
+			mutex.Unlock()
+		}
 		for {
-			web(check)
+			web(check, &name)
 			time.Sleep(sleep)
 		}
 	} else {
+		if check.Name != "" { // Set check's display name.
+			name = check.Name
+		} else {
+			name = check.Shell
+		}
 		for {
-			shell(check)
+			shell(check, &name)
 			time.Sleep(sleep)
 		}
 	}
 }
 
 // Shell worker.
-func shell(check *Check) {
-	// Set check's display name.
-	var name string
-	if check.Name != "" {
-		name = check.Name
-	} else {
-		name = check.Shell
-	}
+func shell(check *Check, name *string) {
 	// Execute with shell in N attemps.
 	var out []byte
 	var err error
@@ -225,8 +234,8 @@ func shell(check *Check) {
 			check.Since = ts.Format(time.RFC3339)
 			modified = etag(ts)
 			mutex.Unlock()
-			notify(check.Notify, "Fixed: "+name, nil)
-			alert(check, &name, nil)
+			notify(check.Notify, "Fixed: "+*name, nil)
+			alert(check, name, nil)
 		}
 	} else {
 		if !check.Failed {
@@ -237,26 +246,14 @@ func shell(check *Check) {
 			modified = etag(ts)
 			mutex.Unlock()
 			msg := string(out) + err.Error()
-			notify(check.Notify, "Failed: "+name, &msg)
-			alert(check, &name, &msg)
+			notify(check.Notify, "Failed: "+*name, &msg)
+			alert(check, name, &msg)
 		}
 	}
 }
 
 // Web worker.
-func web(check *Check) {
-	// Set check's display name.
-	var name string
-	if check.Name != "" {
-		name = check.Name
-	} else {
-		name = check.Web
-	}
-	if check.Return == 0 { // Successful HTTP return code is 200.
-		mutex.Lock()
-		check.Return = 200
-		mutex.Unlock()
-	}
+func web(check *Check, name *string) {
 	// Get the URL in N attempts.
 	var err error
 	for i := 0; i < check.Tries; i++ {
@@ -274,8 +271,8 @@ func web(check *Check) {
 			check.Since = ts.Format(time.RFC3339)
 			modified = etag(ts)
 			mutex.Unlock()
-			notify(check.Notify, "Fixed: "+name, nil)
-			alert(check, &name, nil)
+			notify(check.Notify, "Fixed: "+*name, nil)
+			alert(check, name, nil)
 
 		}
 	} else {
@@ -287,8 +284,8 @@ func web(check *Check) {
 			modified = etag(ts)
 			mutex.Unlock()
 			msg := err.Error()
-			notify(check.Notify, "Failed: "+name, &msg)
-			alert(check, &name, &msg)
+			notify(check.Notify, "Failed: "+*name, &msg)
+			alert(check, name, &msg)
 		}
 	}
 }
