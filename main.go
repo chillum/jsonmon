@@ -109,12 +109,12 @@ func main() {
 	// Read config file or exit with error.
 	config, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<1>", err, "\n")
+		fmt.Fprint(os.Stderr, "<2>", err, "\n")
 		os.Exit(3)
 	}
 	err = yaml.Unmarshal(config, &checks)
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<1>", "invalid config at ", os.Args[1], "\n")
+		fmt.Fprint(os.Stderr, "<2>", "invalid config at ", os.Args[1], "\n")
 		os.Exit(3)
 	}
 	// Exit with return code 0 on kill.
@@ -145,7 +145,7 @@ func main() {
 	http.HandleFunc("/", notFound)
 	err = http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<1>", err, "\n")
+		fmt.Fprint(os.Stderr, "<2>", err, "\n")
 	}
 	os.Exit(4)
 }
@@ -165,9 +165,9 @@ func worker(check *Check) {
 		if check.Web != "" {
 			if check.Shell != "" {
 				fmt.Fprint(os.Stderr,
-					"<2>web and shell checks in one block are not allowed\n",
-					"<2>disabling: ", check.Shell, "\n",
-					"<2>disabling: ", check.Web, "\n")
+					"<3>web and shell checks in one block are not allowed\n",
+					"<3>disabling: ", check.Shell, "\n",
+					"<3>disabling: ", check.Web, "\n")
 			} else {
 				web(check)
 			}
