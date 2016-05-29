@@ -33,7 +33,7 @@ import (
 	"time"
 )
 
-// Application version.
+// Version is the application version.
 const Version = "2.0.7"
 
 // This one is for internal use.
