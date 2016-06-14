@@ -9,10 +9,10 @@
 
 case $1 in
     "true")
-        data="{\"text\": \"Failed: $2\n$3\"}"
+        data="{\"attachments\": [{\"text\": \"Failed: $2\", \"color\": \"danger\"}, {\"color\": \"warning\", \"text\": \"$3\"}]}"
         ;;
     "false")
-        data="{\"text\": \"Fixed: $2\"}"
+        data="{\"attachments\": [{\"text\": \"Fixed: $2\", \"color\": \"good\"}]}"
         ;;
     *)
         exit 1
