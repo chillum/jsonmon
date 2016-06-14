@@ -5,7 +5,7 @@
 
 # First arg is "true" or "false", this is the "failed" check value.
 # The second one contains check's name.
-# The third one is an error description.
+# The third one is the error description.
 
 case $1 in
     "true")
