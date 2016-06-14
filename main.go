@@ -34,7 +34,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "2.0.10"
+const Version = "2.0.11"
 
 // This one is for internal use.
 type ver struct {
@@ -379,13 +379,25 @@ func alert(check *Check, name *string, msg *string) {
 	if check.Alert != nil {
 		plugin, ok := check.Alert.(string)
 		if ok { // check.Alert is a string.
-			out, err := exec.Command(plugin, strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
+			var out []byte
+			var err error
+			if msg != nil {
+				out, err = exec.Command(plugin, strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
+			} else {
+				out, err = exec.Command(plugin, strconv.FormatBool(check.Failed), *name).CombinedOutput()
+			}
 			if err != nil {
 				fmt.Fprint(os.Stderr, "<3>", plugin, " failed\n", string(out), err.Error(), "\n")
 			}
 		} else { // check.Alert is a list.
 			for _, i := range check.Alert.([]interface{}) {
-				out, err := exec.Command(i.(string), strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
+				var out []byte
+				var err error
+				if msg != nil {
+					out, err = exec.Command(i.(string), strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
+				} else {
+					out, err = exec.Command(i.(string), strconv.FormatBool(check.Failed), *name).CombinedOutput()
+				}
 				if err != nil {
 					fmt.Fprint(os.Stderr, "<3>", i, " failed\n", string(out), err.Error(), "\n")
 				}
