@@ -214,7 +214,7 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 	// Execute with shell in N attemps.
 	var out []byte
 	var err error
-	for i := 0; i < check.Tries; i++ {
+	for i := 0; i < check.Tries; {
 		out, err = exec.Command("/bin/sh", "-c", check.Shell).CombinedOutput()
 		if err == nil {
 			if check.Match != "" { // Match regexp.
@@ -226,7 +226,8 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			}
 			break
 		}
-		if i + 1 < check.Tries {
+		i++;
+		if i < check.Tries {
 			time.Sleep(*sleep)
 		}
 	}
@@ -261,12 +262,13 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 func web(check *Check, name *string, sleep *time.Duration) {
 	// Get the URL in N attempts.
 	var err error
-	for i := 0; i < check.Tries; i++ {
+	for i := 0; i < check.Tries; {
 		err = fetch(check.Web, check.Match, check.Return)
 		if err == nil {
 			break
 		}
-		if i + 1 < check.Tries {
+		i++;
+		if i < check.Tries {
 			time.Sleep(*sleep)
 		}
 	}
