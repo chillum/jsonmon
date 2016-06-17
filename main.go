@@ -34,7 +34,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "2.0.11"
+const Version = "2.1.0"
 
 // This one is for internal use.
 type ver struct {
@@ -57,6 +57,7 @@ type Check struct {
 	Alert  interface{} `json:"-" yaml:"alert"`
 	Tries  int         `json:"-" yaml:"tries"`
 	Repeat int         `json:"-" yaml:"repeat"`
+	Sleep  int         `json:"-" yaml:"sleep"`
 	Failed bool        `json:"failed" yaml:"-"`
 	Since  string      `json:"since,omitempty" yaml:"-"`
 }
@@ -177,7 +178,8 @@ func worker(check *Check) {
 		check.Tries = 1
 	}
 	mutex.Unlock()
-	sleep := time.Second * time.Duration(check.Repeat)
+	repeat := time.Second * time.Duration(check.Repeat)
+	sleep := time.Second * time.Duration(check.Sleep)
 	var name string
 	if check.Web != "" {
 		if check.Name != "" { // Set check's display name.
@@ -191,8 +193,8 @@ func worker(check *Check) {
 			mutex.Unlock()
 		}
 		for {
-			web(check, &name)
-			time.Sleep(sleep)
+			web(check, &name, &sleep)
+			time.Sleep(repeat)
 		}
 	} else {
 		if check.Name != "" { // Set check's display name.
@@ -201,14 +203,14 @@ func worker(check *Check) {
 			name = check.Shell
 		}
 		for {
-			shell(check, &name)
-			time.Sleep(sleep)
+			shell(check, &name, &sleep)
+			time.Sleep(repeat)
 		}
 	}
 }
 
 // Shell worker.
-func shell(check *Check, name *string) {
+func shell(check *Check, name *string, sleep *time.Duration) {
 	// Execute with shell in N attemps.
 	var out []byte
 	var err error
@@ -223,6 +225,9 @@ func shell(check *Check, name *string) {
 				}
 			}
 			break
+		}
+		if i + 1 < check.Tries {
+			time.Sleep(*sleep)
 		}
 	}
 	// Process results.
@@ -253,13 +258,16 @@ func shell(check *Check, name *string) {
 }
 
 // Web worker.
-func web(check *Check, name *string) {
+func web(check *Check, name *string, sleep *time.Duration) {
 	// Get the URL in N attempts.
 	var err error
 	for i := 0; i < check.Tries; i++ {
 		err = fetch(check.Web, check.Match, check.Return)
 		if err == nil {
 			break
+		}
+		if i + 1 < check.Tries {
+			time.Sleep(*sleep)
 		}
 	}
 	// Process results.

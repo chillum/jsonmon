@@ -6,6 +6,7 @@
   web:    https://ya.ru
   match:  Найти # Regexp to match in response.
   tries:  3     # Optional attempts number.
+  sleep:  5     # Seconds between tries.
 
 # Checks once in 10 seconds:
 - web:    http://192.168.6.1
