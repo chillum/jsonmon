@@ -226,7 +226,7 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			}
 			break
 		}
-		i++;
+		i++
 		if i < check.Tries {
 			time.Sleep(*sleep)
 		}
@@ -267,7 +267,7 @@ func web(check *Check, name *string, sleep *time.Duration) {
 		if err == nil {
 			break
 		}
-		i++;
+		i++
 		if i < check.Tries {
 			time.Sleep(*sleep)
 		}
