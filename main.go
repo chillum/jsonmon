@@ -14,6 +14,7 @@ More docs: https://github.com/chillum/jsonmon/wiki
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,13 +29,14 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 )
 
 // Version is the application version.
-const Version = "2.1.0"
+const Version = "2.1.1"
 
 // This one is for internal use.
 type ver struct {
@@ -357,21 +359,25 @@ func notify(mail interface{}, subject string, message *string) {
 	// Mail the alerts.
 	if mail != nil {
 		// Make the message.
+		var msg bytes.Buffer
 		var rcpt string
 		var ok bool
 		if rcpt, ok = mail.(string); !ok {
-			for i, v := range mail.([]interface{}) {
-				if i != 0 {
-					rcpt += ", "
-				}
-				rcpt += v.(string)
+			var list []string
+			for _, v := range mail.([]interface{}) {
+				list = append(list, v.(string))
 			}
+			rcpt = strings.Join(list, ", ")
 		}
-		msg := "To: " + rcpt + "\nSubject: " + subject + "\nX-Mailer: jsonmon\n\n"
+		msg.WriteString("To: ")
+		msg.WriteString(rcpt)
+		msg.WriteString("\nSubject: ")
+		msg.WriteString(subject)
+		msg.WriteString("\nX-Mailer: jsonmon\n\n")
 		if message != nil {
-			msg += *message
+			msg.WriteString(*message)
 		}
-		msg += "\n.\n"
+		msg.WriteString("\n.\n")
 		// And send it.
 		sendmail := exec.Command("/usr/sbin/sendmail", "-t")
 		stdin, _ := sendmail.StdinPipe()
@@ -379,7 +385,7 @@ func notify(mail interface{}, subject string, message *string) {
 		if err != nil {
 			fmt.Fprint(os.Stderr, "<3>", err, "\n")
 		}
-		io.WriteString(stdin, msg)
+		io.WriteString(stdin, msg.String())
 		sendmail.Wait()
 	}
 }
