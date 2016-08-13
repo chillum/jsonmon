@@ -285,6 +285,7 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			time.Sleep(*sleep)
 		}
 	}
+	// Process results.
 	if err == nil {
 		if check.Failed {
 			ts := time.Now()
