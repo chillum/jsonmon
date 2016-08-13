@@ -29,14 +29,13 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
 )
 
 // Version is the application version.
-const Version = "2.1.1"
+const Version = "3.0"
 
 // This one is for internal use.
 type ver struct {
@@ -50,18 +49,18 @@ var version ver
 
 // Check details.
 type Check struct {
-	Name   string      `json:"name,omitempty" yaml:"name"`
-	Web    string      `json:"web,omitempty" yaml:"web"`
-	Shell  string      `json:"shell,omitempty" yaml:"shell"`
-	Match  string      `json:"-" yaml:"match"`
-	Return int         `json:"-" yaml:"return"`
-	Notify interface{} `json:"-" yaml:"notify"`
-	Alert  interface{} `json:"-" yaml:"alert"`
-	Tries  int         `json:"-" yaml:"tries"`
-	Repeat int         `json:"-" yaml:"repeat"`
-	Sleep  int         `json:"-" yaml:"sleep"`
-	Failed bool        `json:"failed" yaml:"-"`
-	Since  string      `json:"since,omitempty" yaml:"-"`
+	Name   string `json:"name,omitempty" yaml:"name"`
+	Web    string `json:"web,omitempty" yaml:"web"`
+	Shell  string `json:"shell,omitempty" yaml:"shell"`
+	Match  string `json:"-" yaml:"match"`
+	Return int    `json:"-" yaml:"return"`
+	Notify string `json:"-" yaml:"notify"`
+	Alert  string `json:"-" yaml:"alert"`
+	Tries  int    `json:"-" yaml:"tries"`
+	Repeat int    `json:"-" yaml:"repeat"`
+	Sleep  int    `json:"-" yaml:"sleep"`
+	Failed bool   `json:"failed" yaml:"-"`
+	Since  string `json:"since,omitempty" yaml:"-"`
 }
 
 // Global checks list. Need to share it with workers and Web UI.
@@ -117,7 +116,7 @@ func main() {
 	}
 	err = yaml.Unmarshal(config, &checks)
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<2>", "invalid config at ", os.Args[1], "\n")
+		fmt.Fprint(os.Stderr, "<2>", "invalid config at ", os.Args[1], "\n", err, "\n")
 		os.Exit(3)
 	}
 	// Exit with return code 0 on kill.
@@ -242,8 +241,14 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			check.Since = ts.Format(time.RFC3339)
 			modified = etag(ts)
 			mutex.Unlock()
-			notify(check.Notify, "Fixed: "+*name, nil)
-			alert(check, name, nil)
+			subject := "Fixed: " + *name
+			log(&subject, nil)
+			if check.Notify != "" {
+				notify(check, &subject, nil)
+			}
+			if check.Alert != "" {
+				alert(check, name, nil)
+			}
 		}
 	} else {
 		if !check.Failed {
@@ -254,8 +259,14 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			modified = etag(ts)
 			mutex.Unlock()
 			msg := string(out) + err.Error()
-			notify(check.Notify, "Failed: "+*name, &msg)
-			alert(check, name, &msg)
+			subject := "Failed: " + *name
+			log(&subject, &msg)
+			if check.Notify != "" {
+				notify(check, &subject, &msg)
+			}
+			if check.Alert != "" {
+				alert(check, name, &msg)
+			}
 		}
 	}
 }
@@ -283,9 +294,14 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			check.Since = ts.Format(time.RFC3339)
 			modified = etag(ts)
 			mutex.Unlock()
-			notify(check.Notify, "Fixed: "+*name, nil)
-			alert(check, name, nil)
-
+			subject := "Fixed: " + *name
+			log(&subject, nil)
+			if check.Notify != "" {
+				notify(check, &subject, nil)
+			}
+			if check.Alert != "" {
+				alert(check, name, nil)
+			}
 		}
 	} else {
 		if !check.Failed {
@@ -296,8 +312,14 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			modified = etag(ts)
 			mutex.Unlock()
 			msg := err.Error()
-			notify(check.Notify, "Failed: "+*name, &msg)
-			alert(check, name, &msg)
+			subject := "Failed: " + *name
+			log(&subject, &msg)
+			if check.Notify != "" {
+				notify(check, &subject, &msg)
+			}
+			if check.Alert != "" {
+				alert(check, name, &msg)
+			}
 		}
 	}
 }
@@ -348,77 +370,51 @@ func fetch(url string, match string, code int) error {
 	return err
 }
 
-// Logs and mail alerting.
-func notify(mail interface{}, subject string, message *string) {
+// Logs status changes to stdout.
+func log(subject *string, message *string) {
 	// Log the alerts.
 	if message == nil {
-		fmt.Print("<5>", subject, "\n")
+		fmt.Print("<5>", *subject, "\n")
 	} else {
-		fmt.Print("<5>", subject, "\n", *message, "\n")
+		fmt.Print("<5>", *subject, "\n", *message, "\n")
 	}
-	// Mail the alerts.
-	if mail != nil {
-		// Make the message.
-		var msg bytes.Buffer
-		var rcpt string
-		var ok bool
-		if rcpt, ok = mail.(string); !ok {
-			var list []string
-			for _, v := range mail.([]interface{}) {
-				list = append(list, v.(string))
-			}
-			rcpt = strings.Join(list, ", ")
-		}
-		msg.WriteString("To: ")
-		msg.WriteString(rcpt)
-		msg.WriteString("\nSubject: ")
-		msg.WriteString(subject)
-		msg.WriteString("\nX-Mailer: jsonmon\n\n")
-		if message != nil {
-			msg.WriteString(*message)
-		}
-		msg.WriteString("\n.\n")
-		// And send it.
-		sendmail := exec.Command("/usr/sbin/sendmail", "-t")
-		stdin, _ := sendmail.StdinPipe()
-		err := sendmail.Start()
-		if err != nil {
-			fmt.Fprint(os.Stderr, "<3>", err, "\n")
-		}
-		io.WriteString(stdin, msg.String())
-		sendmail.Wait()
+}
+
+// Mail notifications.
+func notify(check *Check, subject *string, message *string) {
+	// Make the message.
+	var msg bytes.Buffer
+	msg.WriteString("To: ")
+	msg.WriteString(check.Notify)
+	msg.WriteString("\nSubject: ")
+	msg.WriteString(*subject)
+	msg.WriteString("\nX-Mailer: jsonmon\n\n")
+	if message != nil {
+		msg.WriteString(*message)
 	}
+	msg.WriteString("\n.\n")
+	// And send it.
+	sendmail := exec.Command("/usr/sbin/sendmail", "-t")
+	stdin, _ := sendmail.StdinPipe()
+	err := sendmail.Start()
+	if err != nil {
+		fmt.Fprint(os.Stderr, "<3>", err, "\n")
+	}
+	io.WriteString(stdin, msg.String())
+	sendmail.Wait()
 }
 
 // Executes callback. Passes args: true/false, check's name, message.
 func alert(check *Check, name *string, msg *string) {
-	if check.Alert != nil {
-		plugin, ok := check.Alert.(string)
-		if ok { // check.Alert is a string.
-			var out []byte
-			var err error
-			if msg != nil {
-				out, err = exec.Command(plugin, strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
-			} else {
-				out, err = exec.Command(plugin, strconv.FormatBool(check.Failed), *name).CombinedOutput()
-			}
-			if err != nil {
-				fmt.Fprint(os.Stderr, "<3>", plugin, " failed\n", string(out), err.Error(), "\n")
-			}
-		} else { // check.Alert is a list.
-			for _, i := range check.Alert.([]interface{}) {
-				var out []byte
-				var err error
-				if msg != nil {
-					out, err = exec.Command(i.(string), strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
-				} else {
-					out, err = exec.Command(i.(string), strconv.FormatBool(check.Failed), *name).CombinedOutput()
-				}
-				if err != nil {
-					fmt.Fprint(os.Stderr, "<3>", i, " failed\n", string(out), err.Error(), "\n")
-				}
-			}
-		}
+	var out []byte
+	var err error
+	if msg != nil {
+		out, err = exec.Command(check.Alert, strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
+	} else {
+		out, err = exec.Command(check.Alert, strconv.FormatBool(check.Failed), *name).CombinedOutput()
+	}
+	if err != nil {
+		fmt.Fprint(os.Stderr, "<3>", check.Alert, " failed\n", string(out), err.Error(), "\n")
 	}
 }
 
