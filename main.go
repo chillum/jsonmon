@@ -35,7 +35,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.0"
+const Version = "3.0.1"
 
 // This one is for internal use.
 type ver struct {
@@ -247,7 +247,7 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 				notify(check, &subject, nil)
 			}
 			if check.Alert != "" {
-				alert(check, name, nil)
+				alert(check, name, nil, false)
 			}
 		}
 	} else {
@@ -265,7 +265,7 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 				notify(check, &subject, &msg)
 			}
 			if check.Alert != "" {
-				alert(check, name, &msg)
+				alert(check, name, &msg, true)
 			}
 		}
 	}
@@ -285,7 +285,6 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			time.Sleep(*sleep)
 		}
 	}
-	// Process results.
 	if err == nil {
 		if check.Failed {
 			ts := time.Now()
@@ -300,7 +299,7 @@ func web(check *Check, name *string, sleep *time.Duration) {
 				notify(check, &subject, nil)
 			}
 			if check.Alert != "" {
-				alert(check, name, nil)
+				alert(check, name, nil, false)
 			}
 		}
 	} else {
@@ -318,7 +317,7 @@ func web(check *Check, name *string, sleep *time.Duration) {
 				notify(check, &subject, &msg)
 			}
 			if check.Alert != "" {
-				alert(check, name, &msg)
+				alert(check, name, &msg, true)
 			}
 		}
 	}
@@ -405,13 +404,13 @@ func notify(check *Check, subject *string, message *string) {
 }
 
 // Executes callback. Passes args: true/false, check's name, message.
-func alert(check *Check, name *string, msg *string) {
+func alert(check *Check, name *string, msg *string, failed bool) {
 	var out []byte
 	var err error
 	if msg != nil {
-		out, err = exec.Command(check.Alert, strconv.FormatBool(check.Failed), *name, *msg).CombinedOutput()
+		out, err = exec.Command(check.Alert, strconv.FormatBool(failed), *name, *msg).CombinedOutput()
 	} else {
-		out, err = exec.Command(check.Alert, strconv.FormatBool(check.Failed), *name).CombinedOutput()
+		out, err = exec.Command(check.Alert, strconv.FormatBool(failed), *name).CombinedOutput()
 	}
 	if err != nil {
 		fmt.Fprint(os.Stderr, "<3>", check.Alert, " failed\n", string(out), err.Error(), "\n")
