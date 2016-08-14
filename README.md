@@ -5,6 +5,6 @@
 
 * Shell and HTTP/HTTPS checks
 * Alerting and logging
-* JSON API to view current status
+* RESTful API to get checks' status
 
 #### [Documentation](https://github.com/chillum/jsonmon/wiki)

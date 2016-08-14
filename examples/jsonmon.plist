@@ -20,7 +20,7 @@
     <key>NumberOfFiles</key>
     <integer>10240</integer>
   </dict>
-  <!-- The JSON API host & port -->
+  <!-- RESTful API's host & port -->
   <key>EnvironmentVariables</key>
   <dict>
     <!--key>HOST</key>
