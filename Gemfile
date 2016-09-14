@@ -1,3 +1,3 @@
 source 'https://rubygems.org'
 
-gem 'go4rake', '~> 1.4.1'
+gem 'go4rake', '~> 1.5'

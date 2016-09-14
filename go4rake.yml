@@ -1,5 +1,3 @@
-out: ~/Downloads
-
 platforms:
   - name: darwin
     arch: amd64
