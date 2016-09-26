@@ -10,7 +10,7 @@ ExecStart        = /usr/local/bin/jsonmon config.yml
 Restart          = always
 LimitNOFILE      = 10240
 
-# RESTful API's host & port:
+# HTTP host & port
 #Environment = HOST=0.0.0.0
 Environment = HOST=localhost
 Environment = PORT=3000

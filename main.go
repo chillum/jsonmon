@@ -6,8 +6,8 @@ Usage:
  jsonmon -v # Prints version to stdout and exits
 
 Environment:
- HOST: RESTful API's network interface, defaults to localhost
- PORT: RESTful API's port, defaults to 3000
+ HOST: HTTP network interface, defaults to localhost
+ PORT: HTTP port, defaults to 3000
 
 More docs: https://github.com/chillum/jsonmon/wiki
 */
@@ -133,7 +133,7 @@ func main() {
 	for i := range checks {
 		go worker(&checks[i])
 	}
-	// Launch the RESTful API.
+	// Launch the Web server.
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
 	if host == "" {
