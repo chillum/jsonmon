@@ -35,7 +35,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.0.1"
+const Version = "3.1"
 
 // This one is for internal use.
 type ver struct {
@@ -144,7 +144,7 @@ func main() {
 	}
 	http.HandleFunc("/status", getChecks)
 	http.HandleFunc("/version", getVersion)
-	http.HandleFunc("/", notFound)
+	http.HandleFunc("/", getUI)
 	err = http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
 		fmt.Fprint(os.Stderr, "<2>", err, "\n")
@@ -418,11 +418,34 @@ func alert(check *Check, name *string, msg *string, failed bool) {
 	}
 }
 
-// 404 error.
-func notFound(w http.ResponseWriter, r *http.Request) {
+// Serve the Web UI.
+func getUI(w http.ResponseWriter, r *http.Request) {
 	h := w.Header()
 	h.Set("Server", "jsonmon")
-	http.NotFound(w, r)
+	switch r.URL.Path {
+	case "/":
+		displayUI(w, r, "text/html", "index.html")
+	case "/app.js":
+		displayUI(w, r, "application/javascript", "app.js")
+	case "/main.css":
+		displayUI(w, r, "text/css", "main.css")
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+// Web UI caching and delivery.
+func displayUI(w http.ResponseWriter, r *http.Request, mime string, name string) {
+	if r.Header.Get("If-None-Match") == started {
+		w.WriteHeader(http.StatusNotModified)
+	} else {
+		h := w.Header()
+		h.Set("ETag", started)
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("Content-Type", mime)
+		data, _ := Asset(name)
+		w.Write(data)
+	}
 }
 
 // Display checks' details.
