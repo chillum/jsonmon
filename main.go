@@ -35,7 +35,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.1"
+const Version = "3.1.1"
 
 // This one is for internal use.
 type ver struct {
@@ -145,6 +145,7 @@ func main() {
 	http.HandleFunc("/status", getChecks)
 	http.HandleFunc("/version", getVersion)
 	http.HandleFunc("/", getUI)
+	fmt.Fprint(os.Stderr, "<7>Starting HTTP service at ", host, ":", port, "\n")
 	err = http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
 		fmt.Fprint(os.Stderr, "<2>", err, "\n")
