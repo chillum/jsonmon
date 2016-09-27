@@ -1,0 +1,14 @@
+{
+  "name": "jsonmon-ui",
+  "description": "jsonmon Web UI",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chillum/jsonmon"
+  },
+  "devDependencies": {
+    "del": "~2",
+    "gulp": "~3",
+    "gulp-pug": "~3"
+  }
+}

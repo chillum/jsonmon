@@ -1,4 +1,6 @@
 Gemfile.lock
 jsonmon
 jsonmon.test
-/ui
+node_modules/
+bower_components/
+npm-debug.log
