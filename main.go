@@ -149,6 +149,7 @@ func main() {
 	err = http.ListenAndServe(host+":"+port, nil)
 	if err != nil {
 		fmt.Fprint(os.Stderr, "<2>", err, "\n")
+		fmt.Fprintln(os.Stderr, "<7>Use HOST and PORT env variables to customize server settings")
 	}
 	os.Exit(4)
 }
