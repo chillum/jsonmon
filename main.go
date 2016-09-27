@@ -35,7 +35,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.1.1"
+const Version = "3.1.2"
 
 // This one is for internal use.
 type ver struct {
@@ -69,6 +69,10 @@ var checks []Check
 // Global started and last modified date for HTTP caching.
 var modified string
 var started string
+var modHTML string
+var modAngular string
+var modJS string
+var modCSS string
 
 var mutex *sync.RWMutex
 
@@ -126,13 +130,17 @@ func main() {
 		<-done
 		os.Exit(0)
 	}()
-	// Run checks.
+	// Run checks and init HTTP cache.
 	started = etag(time.Now())
 	modified = started
 	mutex = &sync.RWMutex{}
 	for i := range checks {
 		go worker(&checks[i])
 	}
+	cacheHTML, _ := AssetInfo("index.html"); modHTML = cacheHTML.ModTime().UTC().Format(http.TimeFormat)
+	cacheAngular, _ := AssetInfo("angular.min.js"); modAngular = cacheAngular.ModTime().UTC().Format(http.TimeFormat)
+	cacheJS, _ := AssetInfo("app.js"); modJS = cacheJS.ModTime().UTC().Format(http.TimeFormat)
+	cacheCSS, _ := AssetInfo("main.css"); modCSS = cacheCSS.ModTime().UTC().Format(http.TimeFormat)
 	// Launch the Web server.
 	host := os.Getenv("HOST")
 	port := os.Getenv("PORT")
@@ -426,24 +434,26 @@ func getUI(w http.ResponseWriter, r *http.Request) {
 	h.Set("Server", "jsonmon")
 	switch r.URL.Path {
 	case "/":
-		displayUI(w, r, "text/html", "index.html")
+		displayUI(w, r, "text/html", "index.html", &modHTML)
+	case "/angular.min.js":
+		displayUI(w, r, "application/javascript", "angular.min.js", &modAngular)
 	case "/app.js":
-		displayUI(w, r, "application/javascript", "app.js")
+		displayUI(w, r, "application/javascript", "app.js", &modJS)
 	case "/main.css":
-		displayUI(w, r, "text/css", "main.css")
+		displayUI(w, r, "text/css", "main.css", &modCSS)
 	default:
 		http.NotFound(w, r)
 	}
 }
 
 // Web UI caching and delivery.
-func displayUI(w http.ResponseWriter, r *http.Request, mime string, name string) {
-	if r.Header.Get("If-None-Match") == started {
+func displayUI(w http.ResponseWriter, r *http.Request, mime string, name string, modified *string) {
+	if cached := r.Header.Get("If-Modified-Since"); cached == *modified {
 		w.WriteHeader(http.StatusNotModified)
 	} else {
 		h := w.Header()
-		h.Set("ETag", started)
 		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("Last-Modified", *modified)
 		h.Set("Content-Type", mime)
 		data, _ := Asset(name)
 		w.Write(data)
