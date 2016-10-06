@@ -1,7 +1,7 @@
 # jsonmon service for systemd
 
 [Unit]
-After      = network.target
+After            = network.target
 
 [Service]
 User             = jsonmon
@@ -11,9 +11,9 @@ Restart          = always
 LimitNOFILE      = 10240
 
 # HTTP host & port
-#Environment = HOST=0.0.0.0
-Environment = HOST=localhost
-Environment = PORT=3000
+Environment      = HOST=localhost # Use 0.0.0.0 to listen on all interfaces
+                                  # IPv6 addresses are also supported
+Environment      = PORT=3000
 
 [Install]
-WantedBy   = multi-user.target
+WantedBy         = multi-user.target

@@ -9,11 +9,13 @@
   <true/>
   <key>KeepAlive</key>
   <true/>
+  <key>WorkingDirectory</key>
+  <string>/usr/local/etc/jsonmon</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/sh</string>
-    <string>-c</string>
-    <string>$HOME/Go/bin/jsonmon $HOME/.config/jsonmon.yml 2>&amp;1 |/usr/bin/logger -p user.notice -t jsonmon</string>
+    <string>/usr/local/bin/jsonmon</string>
+    <string>--syslog</string>
+    <string>config.yml</string>
   </array>
   <key>SoftResourceLimits</key>
   <dict>
@@ -23,10 +25,8 @@
   <!-- HTTP host & port -->
   <key>EnvironmentVariables</key>
   <dict>
-    <!--key>HOST</key>
-    <string>0.0.0.0</string-->
     <key>HOST</key>
-    <string>localhost</string>
+    <string>localhost</string><!-- Use [::] to listen on all interfaces -->
     <key>PORT</key>
     <string>3000</string>
   </dict>

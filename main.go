@@ -2,14 +2,10 @@
 Quick and simple monitoring system
 
 Usage:
- jsonmon config.yml
- jsonmon -v # Prints version to stdout and exits
+  jsonmon [--syslog] config.yml
+  jsonmon --version
 
-Environment:
- HOST: HTTP network interface, defaults to localhost
- PORT: HTTP port, defaults to 3000
-
-More docs: https://github.com/chillum/jsonmon/wiki
+Docs: https://github.com/chillum/jsonmon/wiki
 */
 package main
 
@@ -18,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"flag"
 	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
@@ -49,16 +46,16 @@ var version ver
 
 // Check details.
 type Check struct {
-	Name   string `json:"name,omitempty" yaml:"name"`
-	Web    string `json:"web,omitempty" yaml:"web"`
-	Shell  string `json:"shell,omitempty" yaml:"shell"`
-	Match  string `json:"-" yaml:"match"`
-	Return int    `json:"-" yaml:"return"`
-	Notify string `json:"-" yaml:"notify"`
-	Alert  string `json:"-" yaml:"alert"`
-	Tries  int    `json:"-" yaml:"tries"`
-	Repeat int    `json:"-" yaml:"repeat"`
-	Sleep  int    `json:"-" yaml:"sleep"`
+	Name   string `json:"name,omitempty"`
+	Web    string `json:"web,omitempty"`
+	Shell  string `json:"shell,omitempty"`
+	Match  string `json:"-"`
+	Return int    `json:"-"`
+	Notify string `json:"-"`
+	Alert  string `json:"-"`
+	Tries  int    `json:"-"`
+	Repeat int    `json:"-"`
+	Sleep  int    `json:"-"`
 	Failed bool   `json:"failed" yaml:"-"`
 	Since  string `json:"since,omitempty" yaml:"-"`
 }
@@ -76,6 +73,8 @@ var modCSS string
 
 var mutex *sync.RWMutex
 
+var useSyslog *bool
+
 // Construct the last modified string.
 func etag(ts time.Time) string {
 	return "W/\"" + strconv.FormatInt(ts.UnixNano(), 10) + "\""
@@ -83,46 +82,57 @@ func etag(ts time.Time) string {
 
 // The main loop.
 func main() {
+	var err error
 	// Parse CLI args.
-	usage := "Usage: " + path.Base(os.Args[0]) + " config.yml\n" +
-		"Docs:  https://github.com/chillum/jsonmon/wiki"
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, usage)
+	cliVersion := flag.Bool("version", false, "")
+	useSyslog = flag.Bool("syslog", false, "")
+	flag.Usage = func() {
+		fmt.Fprint(os.Stderr,
+			"Usage: ", path.Base(os.Args[0]), " [--syslog] config.yml\n",
+			"       ", path.Base(os.Args[0]), " --version\n",
+			"----------------------------------------------\n",
+			"Docs:  https://github.com/chillum/jsonmon/wiki\n")
 		os.Exit(1)
 	}
+	flag.Parse()
+
 	// -v for version.
 	version.App = Version
 	version.Go = runtime.Version()
 	version.Os = runtime.GOOS
 	version.Arch = runtime.GOARCH
-	switch os.Args[1] {
-	case "-h":
-		fallthrough
-	case "-help":
-		fallthrough
-	case "--help":
-		fmt.Fprintln(os.Stderr, usage)
-		os.Exit(0)
-	case "-v":
-		fallthrough
-	case "-version":
-		fallthrough
-	case "--version":
+
+	if *cliVersion {
 		json, _ := json.Marshal(&version)
 		fmt.Println(string(json))
 		os.Exit(0)
 	}
-	// Read config file or exit with error.
-	config, err := ioutil.ReadFile(os.Args[1])
+
+	args := flag.Args()
+	if len(args) != 1 {
+		flag.Usage()
+	}
+
+	if *useSyslog == true {
+		logs, err = logInit()
+		if err != nil {
+			*useSyslog = false
+			log(3, "Syslog failed, disabling: " + err.Error())
+		}
+	}
+
+	// Parse the config file or exit with error.
+	config, err := ioutil.ReadFile(args[0])
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<2>", err, "\n")
+		log(2, err.Error())
 		os.Exit(3)
 	}
 	err = yaml.Unmarshal(config, &checks)
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<2>", "invalid config at ", os.Args[1], "\n", err, "\n")
+		log(2, "invalid config at "+os.Args[1]+"\n"+err.Error())
 		os.Exit(3)
 	}
+
 	// Exit with return code 0 on kill.
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGTERM)
@@ -130,6 +140,7 @@ func main() {
 		<-done
 		os.Exit(0)
 	}()
+
 	// Run checks and init HTTP cache.
 	started = etag(time.Now())
 	modified = started
@@ -137,27 +148,35 @@ func main() {
 	for i := range checks {
 		go worker(&checks[i])
 	}
-	cacheHTML, _ := AssetInfo("index.html"); modHTML = cacheHTML.ModTime().UTC().Format(http.TimeFormat)
-	cacheAngular, _ := AssetInfo("angular.min.js"); modAngular = cacheAngular.ModTime().UTC().Format(http.TimeFormat)
-	cacheJS, _ := AssetInfo("app.js"); modJS = cacheJS.ModTime().UTC().Format(http.TimeFormat)
-	cacheCSS, _ := AssetInfo("main.css"); modCSS = cacheCSS.ModTime().UTC().Format(http.TimeFormat)
+	cacheHTML, _ := AssetInfo("index.html")
+	modHTML = cacheHTML.ModTime().UTC().Format(http.TimeFormat)
+	cacheAngular, _ := AssetInfo("angular.min.js")
+	modAngular = cacheAngular.ModTime().UTC().Format(http.TimeFormat)
+	cacheJS, _ := AssetInfo("app.js")
+	modJS = cacheJS.ModTime().UTC().Format(http.TimeFormat)
+	cacheCSS, _ := AssetInfo("main.css")
+	modCSS = cacheCSS.ModTime().UTC().Format(http.TimeFormat)
+
 	// Launch the Web server.
 	host := os.Getenv("HOST")
-	port := os.Getenv("PORT")
 	if host == "" {
 		host = "localhost"
 	}
+	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3000"
 	}
+	listen := host + ":" + port
+
 	http.HandleFunc("/status", getChecks)
 	http.HandleFunc("/version", getVersion)
 	http.HandleFunc("/", getUI)
-	fmt.Fprint(os.Stderr, "<7>Starting HTTP service at ", host, ":", port, "\n")
-	err = http.ListenAndServe(host+":"+port, nil)
+
+	log(7, "Starting HTTP service at "+listen)
+	err = http.ListenAndServe(listen, nil)
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<2>", err, "\n")
-		fmt.Fprintln(os.Stderr, "<7>Use HOST and PORT env variables to customize server settings")
+		log(2, err.Error())
+		log(7, "Use HOST and PORT env variables to customize server settings")
 	}
 	os.Exit(4)
 }
@@ -165,17 +184,16 @@ func main() {
 // Background worker.
 func worker(check *Check) {
 	if check.Shell == "" && check.Web == "" {
-		fmt.Fprintln(os.Stderr, "<4>Ignoring entry with no either Web or shell check")
+		log(4, "Ignoring entry with no either Web or shell check")
 		mutex.Lock()
 		check.Failed = true
 		mutex.Unlock()
 		return
 	}
 	if check.Shell != "" && check.Web != "" {
-		fmt.Fprint(os.Stderr,
-			"<3>Web and shell checks in one block are not allowed\n",
-			"<3>Disabled: ", check.Shell, "\n",
-			"<3>Disabled: ", check.Web, "\n")
+		log(3, "Web and shell checks in one block are not allowed")
+		log(3, "Disabled: "+check.Shell)
+		log(3, "Disabled: "+check.Web)
 		mutex.Lock()
 		check.Failed = true
 		mutex.Unlock()
@@ -252,7 +270,7 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			modified = etag(ts)
 			mutex.Unlock()
 			subject := "Fixed: " + *name
-			log(&subject, nil)
+			log(5, subject)
 			if check.Notify != "" {
 				notify(check, &subject, nil)
 			}
@@ -270,7 +288,7 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			mutex.Unlock()
 			msg := string(out) + err.Error()
 			subject := "Failed: " + *name
-			log(&subject, &msg)
+			log(5, subject+"\n"+msg)
 			if check.Notify != "" {
 				notify(check, &subject, &msg)
 			}
@@ -305,7 +323,7 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			modified = etag(ts)
 			mutex.Unlock()
 			subject := "Fixed: " + *name
-			log(&subject, nil)
+			log(5, subject)
 			if check.Notify != "" {
 				notify(check, &subject, nil)
 			}
@@ -323,7 +341,7 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			mutex.Unlock()
 			msg := err.Error()
 			subject := "Failed: " + *name
-			log(&subject, &msg)
+			log(5, subject+"\n"+msg)
 			if check.Notify != "" {
 				notify(check, &subject, &msg)
 			}
@@ -380,20 +398,11 @@ func fetch(url string, match string, code int) error {
 	return err
 }
 
-// Logs status changes to stdout.
-func log(subject *string, message *string) {
-	// Log the alerts.
-	if message == nil {
-		fmt.Print("<5>", *subject, "\n")
-	} else {
-		fmt.Print("<5>", *subject, "\n", *message, "\n")
-	}
-}
-
 // Mail notifications.
 func notify(check *Check, subject *string, message *string) {
 	// Make the message.
 	var msg bytes.Buffer
+	var err error
 	msg.WriteString("To: ")
 	msg.WriteString(check.Notify)
 	msg.WriteString("\nSubject: ")
@@ -406,9 +415,9 @@ func notify(check *Check, subject *string, message *string) {
 	// And send it.
 	sendmail := exec.Command("/usr/sbin/sendmail", "-t")
 	stdin, _ := sendmail.StdinPipe()
-	err := sendmail.Start()
+	err = sendmail.Start()
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<3>", err, "\n")
+		log(3, err.Error())
 	}
 	io.WriteString(stdin, msg.String())
 	sendmail.Wait()
@@ -424,7 +433,7 @@ func alert(check *Check, name *string, msg *string, failed bool) {
 		out, err = exec.Command(check.Alert, strconv.FormatBool(failed), *name).CombinedOutput()
 	}
 	if err != nil {
-		fmt.Fprint(os.Stderr, "<3>", check.Alert, " failed\n", string(out), err.Error(), "\n")
+		log(3, check.Alert+" failed\n"+string(out)+err.Error())
 	}
 }
 

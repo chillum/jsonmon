@@ -6,3 +6,10 @@ platforms:
     arch:
       - amd64
       - 386
+  - name: windows
+    arch: 386
+    zip:  win32
+  - name: windows
+    arch: amd64
+    zip:  win64
+
