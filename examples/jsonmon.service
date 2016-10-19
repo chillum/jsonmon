@@ -1,6 +1,7 @@
 # jsonmon service for systemd
 
 [Unit]
+Description      = jsonmon monitoring and alerting system
 After            = network.target
 
 [Service]
