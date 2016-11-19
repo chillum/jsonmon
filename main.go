@@ -33,7 +33,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.2-alpha"
+const Version = "3.1.3"
 
 // This one is for internal use.
 type ver struct {
@@ -353,41 +353,21 @@ func web(check *Check, name *string, sleep *time.Duration) {
 	}
 }
 
-// Check HTTP redirects.
-func redirect(req *http.Request, via []*http.Request) error {
-	// When redirects number > 10 probably there's a problem.
-	if len(via) >= 10 {
-		return errors.New("stopped after 10 redirects")
-	}
-	// Redirects don't get User-Agent.
-	req.Header.Set("User-Agent", "jsonmon")
-	return nil
-}
-
 // The actual HTTP GET.
 func fetch(url string, match string, code int) error {
-	var err error
-	var resp *http.Response
-	var req *http.Request
-	client := &http.Client{}
-	client.CheckRedirect = redirect
-	req, err = http.NewRequest("GET", url, nil)
+	resp, err := http.Get(url)
 	if err == nil {
-		req.Header.Set("User-Agent", "jsonmon")
-		resp, err = client.Do(req)
-		if err == nil {
-			if resp.StatusCode != code { // Check status code.
-				err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
-			} else { // Match regexp.
-				if resp != nil && match != "" {
-					var regex *regexp.Regexp
-					regex, err = regexp.Compile(match)
-					if err == nil {
-						var body []byte
-						body, _ = ioutil.ReadAll(resp.Body)
-						if !regex.Match(body) {
-							err = errors.New("Expected:\n" + match + "\n\nGot:\n" + string(body))
-						}
+		if resp.StatusCode != code { // Check status code.
+			err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
+		} else { // Match regexp.
+			if resp != nil && match != "" {
+				var regex *regexp.Regexp
+				regex, err = regexp.Compile(match)
+				if err == nil {
+					var body []byte
+					body, _ = ioutil.ReadAll(resp.Body)
+					if !regex.Match(body) {
+						err = errors.New("Expected:\n" + match + "\n\nGot:\n" + string(body))
 					}
 				}
 			}
