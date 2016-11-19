@@ -13,9 +13,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"flag"
-	"gopkg.in/yaml.v2"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -29,6 +28,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 // Version is the application version.
@@ -117,7 +118,7 @@ func main() {
 		logs, err = logInit()
 		if err != nil {
 			*useSyslog = false
-			log(3, "Syslog failed, disabling: " + err.Error())
+			log(3, "Syslog failed, disabling: "+err.Error())
 		}
 	}
 
