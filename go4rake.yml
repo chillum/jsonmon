@@ -12,4 +12,3 @@ platforms:
   - name: windows
     arch: amd64
     zip:  win64
-
