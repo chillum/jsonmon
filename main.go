@@ -2,8 +2,8 @@
 Quick and simple monitoring system
 
 Usage:
-  jsonmon [--syslog] config.yml
-  jsonmon --version
+  jsonmon [-syslog] config.yml
+  jsonmon -version
 
 Docs: https://github.com/chillum/jsonmon/wiki
 */
@@ -89,8 +89,8 @@ func main() {
 	useSyslog = flag.Bool("syslog", false, "")
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
-			"Usage: ", path.Base(os.Args[0]), " [--syslog] config.yml\n",
-			"       ", path.Base(os.Args[0]), " --version\n",
+			"Usage: ", path.Base(os.Args[0]), " [-syslog] config.yml\n",
+			"       ", path.Base(os.Args[0]), " -version\n",
 			"----------------------------------------------\n",
 			"Docs:  https://github.com/chillum/jsonmon/wiki\n")
 		os.Exit(1)
