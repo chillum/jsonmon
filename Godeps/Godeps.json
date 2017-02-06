@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/chillum/jsonmon",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v74",
+	"GodepVersion": "v75",
 	"Deps": [
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
