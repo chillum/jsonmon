@@ -1,4 +1,4 @@
-rem jsonmon start-up script for Windows
+rem jsonmon start script for Windows
 rem If you want to start jsonmon automatically, you can use Task Scheduler
 @echo off
 
