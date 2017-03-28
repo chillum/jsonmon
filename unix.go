@@ -4,9 +4,13 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"log/syslog"
+	"os"
 )
+
+// ShellPath points to a Bourne-compatible shell.
+// /bin/sh is the standard path that should work on any Unix.
+const ShellPath string = "/bin/sh"
 
 var logs *syslog.Writer
 

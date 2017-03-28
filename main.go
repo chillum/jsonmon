@@ -33,7 +33,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.1.3"
+const Version = "3.1.4"
 
 // This one is for internal use.
 type ver struct {
@@ -245,7 +245,7 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 	var out []byte
 	var err error
 	for i := 0; i < check.Tries; {
-		out, err = exec.Command("sh", "-c", check.Shell).CombinedOutput()
+		out, err = exec.Command(ShellPath, "-c", check.Shell).CombinedOutput()
 		if err == nil {
 			if check.Match != "" { // Match regexp.
 				var regex *regexp.Regexp

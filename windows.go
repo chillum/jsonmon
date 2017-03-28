@@ -4,9 +4,15 @@ package main
 
 import (
 	"fmt"
-	"golang.org/x/sys/windows/svc/eventlog"
 	"os"
+
+	"golang.org/x/sys/windows/svc/eventlog"
 )
+
+// ShellPath points to a Bourne-compatible shell.
+// We expect `sh` anywhere in %PATH% on Windows.
+const ShellPath string = "sh"
+
 var logs *eventlog.Log
 
 func logInit() (logwriter *eventlog.Log, err error) {
