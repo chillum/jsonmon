@@ -32,35 +32,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Version is the application version.
-const Version = "3.1.4"
-
-// This one is for internal use.
-type ver struct {
-	App  string `json:"jsonmon"`
-	Go   string `json:"runtime"`
-	Os   string `json:"os"`
-	Arch string `json:"arch"`
-}
-
-var version ver
-
-// Check details.
-type Check struct {
-	Name   string `json:"name,omitempty"`
-	Web    string `json:"web,omitempty"`
-	Shell  string `json:"shell,omitempty"`
-	Match  string `json:"-"`
-	Return int    `json:"-"`
-	Notify string `json:"-"`
-	Alert  string `json:"-"`
-	Tries  int    `json:"-"`
-	Repeat int    `json:"-"`
-	Sleep  int    `json:"-"`
-	Failed bool   `json:"failed" yaml:"-"`
-	Since  string `json:"since,omitempty" yaml:"-"`
-}
-
 // Global checks list. Need to share it with workers and Web UI.
 var checks []Check
 
