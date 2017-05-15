@@ -10,3 +10,5 @@ npm-debug.log
 # deps
 /vendor/*
 !/vendor/vendor.json
+
+/build
