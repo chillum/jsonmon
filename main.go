@@ -10,26 +10,25 @@ Docs: https://github.com/chillum/jsonmon/wiki
 package main
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path"
-	"regexp"
 	"runtime"
 	"strconv"
-	"sync"
 	"syscall"
 	"time"
 
 	"gopkg.in/yaml.v2"
+)
+
+const (
+	BindAddress = "0.0.0.0"
+	BindPort    = "3000"
 )
 
 // Global checks list. Need to share it with workers and Web UI.
@@ -42,8 +41,6 @@ var modHTML string
 var modAngular string
 var modJS string
 var modCSS string
-
-var mutex *sync.RWMutex
 
 var useSyslog *bool
 
@@ -114,12 +111,13 @@ func main() {
 	}()
 
 	// Run checks and init HTTP cache.
+	for _, check := range checks {
+		go check.Run()
+	}
+
 	started = etag(time.Now())
 	modified = started
-	mutex = &sync.RWMutex{}
-	for i := range checks {
-		go worker(&checks[i])
-	}
+
 	cacheHTML, _ := AssetInfo("index.html")
 	modHTML = cacheHTML.ModTime().UTC().Format(http.TimeFormat)
 	cacheAngular, _ := AssetInfo("angular.min.js")
@@ -132,11 +130,11 @@ func main() {
 	// Launch the Web server.
 	host := os.Getenv("HOST")
 	if host == "" {
-		host = "localhost"
+		host = BindAddress
 	}
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "3000"
+		port = BindPort
 	}
 	listen := host + ":" + port
 
@@ -151,242 +149,6 @@ func main() {
 		log(7, "Use HOST and PORT env variables to customize server settings")
 	}
 	os.Exit(4)
-}
-
-// Background worker.
-func worker(check *Check) {
-	if check.Shell == "" && check.Web == "" {
-		log(4, "Ignoring entry with no either Web or shell check")
-		mutex.Lock()
-		check.Failed = true
-		mutex.Unlock()
-		return
-	}
-	if check.Shell != "" && check.Web != "" {
-		log(3, "Web and shell checks in one block are not allowed")
-		log(3, "Disabled: "+check.Shell)
-		log(3, "Disabled: "+check.Web)
-		mutex.Lock()
-		check.Failed = true
-		mutex.Unlock()
-		return
-	}
-	mutex.Lock()
-	if check.Repeat == 0 { // Set default timeout.
-		check.Repeat = 30
-	}
-	if check.Tries == 0 { // Default to 1 attempt.
-		check.Tries = 1
-	}
-	mutex.Unlock()
-	repeat := time.Second * time.Duration(check.Repeat)
-	sleep := time.Second * time.Duration(check.Sleep)
-	var name string
-	if check.Web != "" {
-		if check.Name != "" { // Set check's display name.
-			name = check.Name
-		} else {
-			name = check.Web
-		}
-		if check.Return == 0 { // Successful HTTP return code is 200.
-			mutex.Lock()
-			check.Return = 200
-			mutex.Unlock()
-		}
-		for {
-			web(check, &name, &sleep)
-			time.Sleep(repeat)
-		}
-	} else {
-		if check.Name != "" { // Set check's display name.
-			name = check.Name
-		} else {
-			name = check.Shell
-		}
-		for {
-			shell(check, &name, &sleep)
-			time.Sleep(repeat)
-		}
-	}
-}
-
-// Shell worker.
-func shell(check *Check, name *string, sleep *time.Duration) {
-	// Execute with shell in N attemps.
-	var out []byte
-	var err error
-	for i := 0; i < check.Tries; {
-		out, err = exec.Command(ShellPath, "-c", check.Shell).CombinedOutput()
-		if err == nil {
-			if check.Match != "" { // Match regexp.
-				var regex *regexp.Regexp
-				regex, err = regexp.Compile(check.Match)
-				if err == nil && !regex.Match(out) {
-					err = errors.New("Expected:\n" + check.Match + "\n\nGot:\n" + string(out))
-				}
-			}
-			break
-		}
-		i++
-		if i < check.Tries {
-			time.Sleep(*sleep)
-		}
-	}
-	// Process results.
-	if err == nil {
-		if check.Failed {
-			ts := time.Now()
-			mutex.Lock()
-			check.Failed = false
-			check.Since = ts.Format(time.RFC3339)
-			modified = etag(ts)
-			mutex.Unlock()
-			subject := "Fixed: " + *name
-			log(5, subject)
-			if check.Notify != "" {
-				notify(check, &subject, nil)
-			}
-			if check.Alert != "" {
-				alert(check, name, nil, false)
-			}
-		}
-	} else {
-		if !check.Failed {
-			ts := time.Now()
-			mutex.Lock()
-			check.Failed = true
-			check.Since = ts.Format(time.RFC3339)
-			modified = etag(ts)
-			mutex.Unlock()
-			msg := string(out) + err.Error()
-			subject := "Failed: " + *name
-			log(5, subject+"\n"+msg)
-			if check.Notify != "" {
-				notify(check, &subject, &msg)
-			}
-			if check.Alert != "" {
-				alert(check, name, &msg, true)
-			}
-		}
-	}
-}
-
-// Web worker.
-func web(check *Check, name *string, sleep *time.Duration) {
-	// Get the URL in N attempts.
-	var err error
-	for i := 0; i < check.Tries; {
-		err = fetch(check.Web, check.Match, check.Return)
-		if err == nil {
-			break
-		}
-		i++
-		if i < check.Tries {
-			time.Sleep(*sleep)
-		}
-	}
-	// Process results.
-	if err == nil {
-		if check.Failed {
-			ts := time.Now()
-			mutex.Lock()
-			check.Failed = false
-			check.Since = ts.Format(time.RFC3339)
-			modified = etag(ts)
-			mutex.Unlock()
-			subject := "Fixed: " + *name
-			log(5, subject)
-			if check.Notify != "" {
-				notify(check, &subject, nil)
-			}
-			if check.Alert != "" {
-				alert(check, name, nil, false)
-			}
-		}
-	} else {
-		if !check.Failed {
-			ts := time.Now()
-			mutex.Lock()
-			check.Failed = true
-			check.Since = ts.Format(time.RFC3339)
-			modified = etag(ts)
-			mutex.Unlock()
-			msg := err.Error()
-			subject := "Failed: " + *name
-			log(5, subject+"\n"+msg)
-			if check.Notify != "" {
-				notify(check, &subject, &msg)
-			}
-			if check.Alert != "" {
-				alert(check, name, &msg, true)
-			}
-		}
-	}
-}
-
-// The actual HTTP GET.
-func fetch(url string, match string, code int) error {
-	resp, err := http.Get(url)
-	if err == nil {
-		if resp.StatusCode != code { // Check status code.
-			err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
-		} else { // Match regexp.
-			if resp != nil && match != "" {
-				var regex *regexp.Regexp
-				regex, err = regexp.Compile(match)
-				if err == nil {
-					var body []byte
-					body, _ = ioutil.ReadAll(resp.Body)
-					if !regex.Match(body) {
-						err = errors.New("Expected:\n" + match + "\n\nGot:\n" + string(body))
-					}
-				}
-			}
-		}
-	}
-	if resp != nil {
-		resp.Body.Close()
-	}
-	return err
-}
-
-// Mail notifications.
-func notify(check *Check, subject *string, message *string) {
-	// Make the message.
-	var msg bytes.Buffer
-	var err error
-	msg.WriteString("To: ")
-	msg.WriteString(check.Notify)
-	msg.WriteString("\nSubject: ")
-	msg.WriteString(*subject)
-	msg.WriteString("\nX-Mailer: jsonmon\n\n")
-	if message != nil {
-		msg.WriteString(*message)
-	}
-	msg.WriteString("\n.\n")
-	// And send it.
-	sendmail := exec.Command("/usr/sbin/sendmail", "-t")
-	stdin, _ := sendmail.StdinPipe()
-	err = sendmail.Start()
-	if err != nil {
-		log(3, err.Error())
-	}
-	io.WriteString(stdin, msg.String())
-	sendmail.Wait()
-}
-
-// Executes callback. Passes args: true/false, check's name, message.
-func alert(check *Check, name *string, msg *string, failed bool) {
-	var out []byte
-	var err error
-	if msg != nil {
-		out, err = exec.Command(check.Alert, strconv.FormatBool(failed), *name, *msg).CombinedOutput()
-	} else {
-		out, err = exec.Command(check.Alert, strconv.FormatBool(failed), *name).CombinedOutput()
-	}
-	if err != nil {
-		log(3, check.Alert+" failed\n"+string(out)+err.Error())
-	}
 }
 
 // Serve the Web UI.
@@ -423,31 +185,25 @@ func displayUI(w http.ResponseWriter, r *http.Request, mime string, name string,
 
 // Display checks' details.
 func getChecks(w http.ResponseWriter, r *http.Request) {
-	displayJSON(w, r, &checks, &modified, true)
+	displayJSON(w, r, &checks, &modified)
 }
 
 // Display application version.
 func getVersion(w http.ResponseWriter, r *http.Request) {
-	displayJSON(w, r, &version, &started, false)
+	displayJSON(w, r, &version, &started)
 }
 
 // Output JSON.
-func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache *string, lock bool) {
+func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache *string) {
 	var cached bool
 	var result []byte
 	h := w.Header()
 	h.Set("Server", "jsonmon")
-	if lock {
-		mutex.RLock()
-	}
 	if r.Header.Get("If-None-Match") == *cache {
 		cached = true
 	} else {
 		h.Set("ETag", *cache)
 		result, _ = json.Marshal(&data)
-	}
-	if lock {
-		mutex.RUnlock()
 	}
 	if cached {
 		w.WriteHeader(http.StatusNotModified)
