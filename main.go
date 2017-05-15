@@ -33,7 +33,7 @@ import (
 )
 
 // Global checks list. Need to share it with workers and Web UI.
-var checks []Check
+var checks []*Check
 
 // Global started and last modified date for HTTP caching.
 var modified string
