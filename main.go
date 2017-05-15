@@ -14,14 +14,13 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path"
 	"runtime"
-	"strconv"
 	"syscall"
-	"time"
 
 	"gopkg.in/yaml.v2"
 )
@@ -34,20 +33,7 @@ const (
 // Global checks list. Need to share it with workers and Web UI.
 var checks []*Check
 
-// Global started and last modified date for HTTP caching.
-var modified string
-var started string
-var modHTML string
-var modAngular string
-var modJS string
-var modCSS string
-
 var useSyslog *bool
-
-// Construct the last modified string.
-func etag(ts time.Time) string {
-	return "W/\"" + strconv.FormatInt(ts.UnixNano(), 10) + "\""
-}
 
 // The main loop.
 func main() {
@@ -115,18 +101,6 @@ func main() {
 		go check.Run()
 	}
 
-	started = etag(time.Now())
-	modified = started
-
-	cacheHTML, _ := AssetInfo("index.html")
-	modHTML = cacheHTML.ModTime().UTC().Format(http.TimeFormat)
-	cacheAngular, _ := AssetInfo("angular.min.js")
-	modAngular = cacheAngular.ModTime().UTC().Format(http.TimeFormat)
-	cacheJS, _ := AssetInfo("app.js")
-	modJS = cacheJS.ModTime().UTC().Format(http.TimeFormat)
-	cacheCSS, _ := AssetInfo("main.css")
-	modCSS = cacheCSS.ModTime().UTC().Format(http.TimeFormat)
-
 	// Launch the Web server.
 	host := os.Getenv("HOST")
 	if host == "" {
@@ -136,11 +110,11 @@ func main() {
 	if port == "" {
 		port = BindPort
 	}
-	listen := host + ":" + port
+	listen := net.JoinHostPort(host, port)
 
-	http.HandleFunc("/status", getChecks)
-	http.HandleFunc("/version", getVersion)
-	http.HandleFunc("/", getUI)
+	http.HandleFunc("/status", handleStatus)
+	http.HandleFunc("/version", handleVersion)
+	http.HandleFunc("/", handleUI)
 
 	log(7, "Starting HTTP service at "+listen)
 	err = http.ListenAndServe(listen, nil)
@@ -149,69 +123,4 @@ func main() {
 		log(7, "Use HOST and PORT env variables to customize server settings")
 	}
 	os.Exit(4)
-}
-
-// Serve the Web UI.
-func getUI(w http.ResponseWriter, r *http.Request) {
-	h := w.Header()
-	h.Set("Server", "jsonmon")
-	switch r.URL.Path {
-	case "/":
-		displayUI(w, r, "text/html", "index.html", &modHTML)
-	case "/angular.min.js":
-		displayUI(w, r, "application/javascript", "angular.min.js", &modAngular)
-	case "/app.js":
-		displayUI(w, r, "application/javascript", "app.js", &modJS)
-	case "/main.css":
-		displayUI(w, r, "text/css", "main.css", &modCSS)
-	default:
-		http.NotFound(w, r)
-	}
-}
-
-// Web UI caching and delivery.
-func displayUI(w http.ResponseWriter, r *http.Request, mime string, name string, modified *string) {
-	if cached := r.Header.Get("If-Modified-Since"); cached == *modified {
-		w.WriteHeader(http.StatusNotModified)
-	} else {
-		h := w.Header()
-		h.Set("X-Content-Type-Options", "nosniff")
-		h.Set("Last-Modified", *modified)
-		h.Set("Content-Type", mime)
-		data, _ := Asset(name)
-		w.Write(data)
-	}
-}
-
-// Display checks' details.
-func getChecks(w http.ResponseWriter, r *http.Request) {
-	displayJSON(w, r, &checks, &modified)
-}
-
-// Display application version.
-func getVersion(w http.ResponseWriter, r *http.Request) {
-	displayJSON(w, r, &version, &started)
-}
-
-// Output JSON.
-func displayJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache *string) {
-	var cached bool
-	var result []byte
-	h := w.Header()
-	h.Set("Server", "jsonmon")
-	if r.Header.Get("If-None-Match") == *cache {
-		cached = true
-	} else {
-		h.Set("ETag", *cache)
-		result, _ = json.Marshal(&data)
-	}
-	if cached {
-		w.WriteHeader(http.StatusNotModified)
-	} else {
-		h.Set("Cache-Control", "no-cache")
-		h.Set("Access-Control-Allow-Origin", "*")
-		h.Set("X-Content-Type-Options", "nosniff")
-		h.Set("Content-Type", "application/json; charset=utf-8")
-		w.Write(result)
-	}
 }
