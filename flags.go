@@ -23,13 +23,10 @@ func init() {
 
 	flag.Usage = func() {
 		t := template.Must(template.New("usage").Parse(usageTemplate))
-		err := t.Execute(os.Stderr, map[string]string{
+		t.Execute(os.Stderr, map[string]string{
 			"App": path.Base(os.Args[0]),
 		})
-		if err != nil {
-			fmt.Println(err)
-		}
-		os.Exit(1)
+		fatal(ErrorArguments, "missing config file parameter")
 	}
 
 	if !flag.Parsed() {

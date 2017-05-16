@@ -28,6 +28,14 @@ const (
 	BindPort    = "3000"
 )
 
+// Context related exit codes
+const (
+	ErrorIO = iota
+	ErrorMarshal
+	ErrorArguments
+	ErrorNet
+)
+
 // Global checks list. Need to share it with workers and Web UI.
 var checks []*Check
 
@@ -54,13 +62,11 @@ func main() {
 	// Parse the config file or exit with error.
 	config, err := ioutil.ReadFile(args[0])
 	if err != nil {
-		log(2, err.Error())
-		os.Exit(3)
+		fatal(ErrorIO, err.Error())
 	}
 	err = yaml.Unmarshal(config, &checks)
 	if err != nil {
-		log(2, fmt.Sprintf("Invalid config at %q with error:\n\t%v", os.Args[1], err))
-		os.Exit(3)
+		fatal(ErrorMarshal, fmt.Sprintf("Invalid config at %q with error:\n\t%v", os.Args[1], err))
 	}
 
 	// Listening to SIGTERM signal and exit with return code 0 on kill.
@@ -94,8 +100,12 @@ func main() {
 	log(7, "Starting HTTP service at "+listen)
 	err = http.ListenAndServe(listen, nil)
 	if err != nil {
-		log(2, err.Error())
-		log(7, "Use HOST and PORT env variables to customize server settings")
+		fatal(ErrorNet, err.Error())
 	}
-	os.Exit(4)
+}
+
+// print the err message and exit with given exit code
+func fatal(code int, err string) {
+	fmt.Fprintln(os.Stderr, err)
+	os.Exit(code)
 }
