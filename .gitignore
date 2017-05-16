@@ -8,8 +8,4 @@ npm-debug.log
 # IDE
 .idea/
 
-# deps
-/vendor/*
-!/vendor/vendor.json
-
 /build
