@@ -27,6 +27,8 @@ linux:
 	@echo "Building linux binaries..."
 	@$(call build,linux,amd64,)
 	@$(call zip,linux,amd64,)
+	@$(call build,linux,386,)
+	@$(call zip,linux,386,)
 
 win:
 	@echo "Building windows binaries..."
@@ -38,6 +40,7 @@ all: install embed-ui osx linux win
 embed-ui:
 	@echo "Generating bindata..."
 	go-bindata -nocompress -nomemcopy -prefix ui/html ui/html
+	go fmt bindata.go
 
 clean:
 	@rm -rf build/*
