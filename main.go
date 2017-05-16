@@ -18,8 +18,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
-	"runtime"
 	"syscall"
 
 	"gopkg.in/yaml.v2"
@@ -33,32 +31,9 @@ const (
 // Global checks list. Need to share it with workers and Web UI.
 var checks []*Check
 
-var useSyslog *bool
-
-// The main loop.
 func main() {
-	var err error
-	// Parse CLI args.
-	cliVersion := flag.Bool("version", false, "")
-	useSyslog = flag.Bool("syslog", false, "")
-	flag.Usage = func() {
-		fmt.Fprint(os.Stderr,
-			"Usage: ", path.Base(os.Args[0]), " [-syslog] config.yml\n",
-			"       ", path.Base(os.Args[0]), " -version\n",
-			"----------------------------------------------\n",
-			"Docs:  https://github.com/chillum/jsonmon/wiki\n")
-		os.Exit(1)
-	}
-	flag.Parse()
-
-	// -v for version.
-	version.App = Version
-	version.Go = runtime.Version()
-	version.Os = runtime.GOOS
-	version.Arch = runtime.GOARCH
-
-	if *cliVersion {
-		json, _ := json.Marshal(&version)
+	if versionFlag {
+		json, _ := json.Marshal(NewVersionPayload())
 		fmt.Println(string(json))
 		os.Exit(0)
 	}
@@ -68,10 +43,10 @@ func main() {
 		flag.Usage()
 	}
 
-	if *useSyslog == true {
+	if syslogFlag {
+		var err error
 		logs, err = logInit()
 		if err != nil {
-			*useSyslog = false
 			log(3, "Syslog failed, disabling: "+err.Error())
 		}
 	}
@@ -84,19 +59,19 @@ func main() {
 	}
 	err = yaml.Unmarshal(config, &checks)
 	if err != nil {
-		log(2, "invalid config at "+os.Args[1]+"\n"+err.Error())
+		log(2, fmt.Sprintf("Invalid config at %q with error:\n\t%v", os.Args[1], err))
 		os.Exit(3)
 	}
 
-	// Exit with return code 0 on kill.
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, syscall.SIGTERM)
+	// Listening to SIGTERM signal and exit with return code 0 on kill.
 	go func() {
+		done := make(chan os.Signal, 1)
+		signal.Notify(done, syscall.SIGTERM)
 		<-done
 		os.Exit(0)
 	}()
 
-	// Run checks and init HTTP cache.
+	// initialize checks
 	for _, check := range checks {
 		go check.Run()
 	}

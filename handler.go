@@ -73,7 +73,7 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 
 // Display application version.
 func handleVersion(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, r, &version, &started)
+	writeJSON(w, r, NewVersionPayload(), &started)
 }
 
 // Output JSON.

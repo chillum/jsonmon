@@ -15,13 +15,12 @@ const ShellPath string = "sh"
 
 var logs *eventlog.Log
 
-func logInit() (logwriter *eventlog.Log, err error) {
-	logwriter, err = eventlog.Open("jsonmon")
-	return
+func logInit() (*eventlog.Log, error) {
+	return eventlog.Open("jsonmon")
 }
 
 func log(severity int, message string) {
-	if *useSyslog == false {
+	if syslogFlag == false {
 		fmt.Fprint(os.Stderr, "<", severity, ">", message, "\n")
 	} else {
 		switch severity {

@@ -14,13 +14,12 @@ const ShellPath string = "/bin/sh"
 
 var logs *syslog.Writer
 
-func logInit() (logwriter *syslog.Writer, err error) {
-	logwriter, err = syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "jsonmon")
-	return
+func logInit() (*syslog.Writer, error) {
+	return syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "jsonmon")
 }
 
 func log(severity int, message string) {
-	if *useSyslog == false {
+	if syslogFlag == false {
 		fmt.Fprint(os.Stderr, "<", severity, ">", message, "\n")
 	} else {
 		switch severity {
