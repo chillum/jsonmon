@@ -2,17 +2,17 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"path"
 	"text/template"
 )
 
 const usageTemplate = `Usage:
-		{{.App}} [-syslog] config.yml
-		{{.App}} -version
-		------------------------------------------
-		Docs:	https://github.com/chillum/jsonmon/wiki
+	{{.App}} [-syslog] config.yml
+	{{.App}} -version
+	-----------------------------------------------
+	Docs:	https://github.com/chillum/jsonmon/wiki
+
 `
 
 var syslogFlag, versionFlag bool
