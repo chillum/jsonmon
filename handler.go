@@ -68,25 +68,29 @@ func displayUI(w http.ResponseWriter, r *http.Request, mime string, name string,
 
 // Display checks' details.
 func handleStatus(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, r, &checks, &modified)
+	checks.RLock()
+	b, _ := json.Marshal(&checks)
+	checks.RUnlock()
+	writeJSON(w, r, b, nil)
 }
 
 // Display application version.
 func handleVersion(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, r, NewVersionPayload(), &started)
+	b, _ := json.Marshal(NewVersionPayload())
+	writeJSON(w, r, b, &started)
 }
 
 // Output JSON.
-func writeJSON(w http.ResponseWriter, r *http.Request, data interface{}, cache *string) {
+func writeJSON(w http.ResponseWriter, r *http.Request, result []byte, cache *string) {
 	var cached bool
-	var result []byte
 	h := w.Header()
 	h.Set("Server", "jsonmon")
-	if r.Header.Get("If-None-Match") == *cache {
-		cached = true
-	} else {
-		h.Set("ETag", *cache)
-		result, _ = json.Marshal(&data)
+	if cache != nil {
+		if r.Header.Get("If-None-Match") == *cache {
+			cached = true
+		} else {
+			h.Set("ETag", *cache)
+		}
 	}
 	if cached {
 		w.WriteHeader(http.StatusNotModified)

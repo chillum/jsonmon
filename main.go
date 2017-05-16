@@ -37,7 +37,7 @@ const (
 )
 
 // Global checks list. Need to share it with workers and Web UI.
-var checks []*Check
+var checks Checks
 
 func main() {
 	if versionFlag {

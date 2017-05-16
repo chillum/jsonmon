@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"sync"
 	"text/template"
 	"time"
 )
@@ -25,6 +26,7 @@ X-Mailer: jsonmon
 type checkFunc func(time.Duration, *regexp.Regexp) (string, string)
 
 type Check struct {
+	m           sync.RWMutex
 	Name        string         `json:"name,omitempty"`
 	Web         string         `json:"web,omitempty"`
 	Shell       string         `json:"shell,omitempty"`
@@ -38,6 +40,20 @@ type Check struct {
 	Sleep       int            `json:"-"`
 	Failed      bool           `json:"failed" yaml:"-"`
 	Since       string         `json:"since,omitempty" yaml:"-"`
+}
+
+type Checks []*Check
+
+func (c Checks) RLock() {
+	for _, check := range c {
+		check.m.RLock()
+	}
+}
+
+func (c Checks) RUnlock() {
+	for _, check := range c {
+		check.m.RUnlock()
+	}
 }
 
 func (c *Check) Run() {
@@ -120,6 +136,7 @@ func (c *Check) runWeb(s time.Duration, r *regexp.Regexp) (subject string, msg s
 		err = c.fetch(c.Web, c.Return, r)
 	}
 
+	c.m.Lock()
 	if err != nil {
 		if !c.Failed {
 			c.Failed = true
@@ -132,6 +149,7 @@ func (c *Check) runWeb(s time.Duration, r *regexp.Regexp) (subject string, msg s
 			subject = "Fixed: " + c.Name
 		}
 	}
+	c.m.Unlock()
 
 	return subject, msg
 }
@@ -151,6 +169,7 @@ func (c *Check) runShell(s time.Duration, r *regexp.Regexp) (subject string, msg
 		err = errors.New("Expected:\n" + c.Match + "\n\nGot:\n" + string(out))
 	}
 
+	c.m.Lock()
 	if err != nil {
 		if !c.Failed {
 			c.Failed = true
@@ -163,6 +182,7 @@ func (c *Check) runShell(s time.Duration, r *regexp.Regexp) (subject string, msg
 			subject = "Fixed: " + c.Name
 		}
 	}
+	c.m.Unlock()
 
 	return subject, msg
 }
