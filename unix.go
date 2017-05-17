@@ -33,7 +33,7 @@ func (l *UnixLogger) Log(severity int, message string) {
 		return
 	}
 	if l.writer == nil {
-		msg := fmt.Sprintf(logFormat+"\n", ToLogLevel(severity), message)
+		msg := fmt.Sprintf(logFormat, ToLogLevel(severity), message)
 		if severity >= LOG_INFO {
 			fmt.Fprintln(os.Stdout, msg)
 		} else {
