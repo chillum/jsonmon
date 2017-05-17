@@ -135,7 +135,7 @@ func (c *Check) runWeb(s time.Duration, r *regexp.Regexp) (subject string, msg s
 	err := c.fetch(c.Web, c.Return, r)
 	for i := 1; err != nil && i < c.Tries; i++ {
 		time.Sleep(s)
-		logs.Log(LOG_INFO, fmt.Sprintf("[%s] Running web check, retry #%2d\n", c.Name, i))
+		logs.Log(LOG_DEBUG, fmt.Sprintf("[%s] Running web check, retry #%2d\n", c.Name, i))
 		err = c.fetch(c.Web, c.Return, r)
 	}
 
