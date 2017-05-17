@@ -52,14 +52,6 @@ func main() {
 		flag.Usage()
 	}
 
-	if syslogFlag {
-		var err error
-		logs, err = logInit()
-		if err != nil {
-			log(3, "Syslog failed, disabling: "+err.Error())
-		}
-	}
-
 	// Parse the config file or exit with error.
 	config, err := ioutil.ReadFile(args[0])
 	if err != nil {
@@ -98,7 +90,7 @@ func main() {
 	http.HandleFunc("/version", handleVersion)
 	http.HandleFunc("/", handleUI)
 
-	log(7, "Starting HTTP service at "+listen)
+	logs.Log(LOG_INFO, "Starting HTTP service at "+listen)
 	err = http.ListenAndServe(listen, nil)
 	if err != nil {
 		fatal(ErrorNet, err.Error())

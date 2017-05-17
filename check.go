@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
@@ -64,13 +63,13 @@ func (c Checks) RUnlock() {
 
 func (c *Check) Run() {
 	if c.Shell == "" && c.Web == "" {
-		fmt.Fprintf(os.Stderr, "[%s] Ignoring entry with no either Web or shell check.\n", c.Name)
+		logs.Log(LOG_WARNING, fmt.Sprintf("[%s] Ignoring entry with no either Web or shell check.", c.Name))
 		c.Failed = true
 		return
 	}
 
 	if c.Shell != "" && c.Web != "" {
-		fmt.Fprintf(os.Stderr, "[%s] Web and shell checks in one block are not allowed.\n", c.Name)
+		logs.Log(LOG_ERR, fmt.Sprintf("[%s] Web and shell checks in one block are not allowed.", c.Name))
 		c.Failed = true
 		return
 	}
@@ -95,7 +94,7 @@ func (c *Check) Run() {
 
 	regex, err := regexp.Compile(c.Match)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] Invalid regular expression: %s\n", c.Name, err.Error())
+		logs.Log(LOG_ERR, fmt.Sprintf("[%s] Invalid regular expression: %s", c.Name, err.Error()))
 		return
 	}
 
@@ -117,9 +116,7 @@ func (c *Check) Run() {
 
 		if subject != "" {
 			c.Since = time.Now().Format(time.RFC3339)
-
-			fmt.Fprintf(os.Stderr, "[%s] %s", c.Name, msg)
-
+			logs.Log(LOG_ERR, fmt.Sprintf("[%s] %s", c.Name, msg))
 			if c.Notify != "" {
 				go c.notify(subject, msg)
 			}
@@ -133,12 +130,12 @@ func (c *Check) Run() {
 }
 
 func (c *Check) runWeb(s time.Duration, r *regexp.Regexp) (subject string, msg string) {
-	fmt.Printf("[%s] Running web check\n", c.Name)
+	logs.Log(LOG_INFO, fmt.Sprintf("[%s] Running web check", c.Name))
 
 	err := c.fetch(c.Web, c.Return, r)
 	for i := 1; err != nil && i < c.Tries; i++ {
 		time.Sleep(s)
-		fmt.Printf("[%s] Running web check, retry #%d\n", c.Name, i)
+		logs.Log(LOG_INFO, fmt.Sprintf("[%s] Running web check, retry #%2d\n", c.Name, i))
 		err = c.fetch(c.Web, c.Return, r)
 	}
 
@@ -161,13 +158,12 @@ func (c *Check) runWeb(s time.Duration, r *regexp.Regexp) (subject string, msg s
 }
 
 func (c *Check) runShell(s time.Duration, r *regexp.Regexp) (subject string, msg string) {
-	fmt.Printf("[%s] Running shell check\n", c.Name)
-
+	logs.Log(LOG_INFO, fmt.Sprintf("[%s] Running shell check", c.Name))
 	// Execute with shell with limited attempts
 	out, err := c.execute(c.Shell, r)
 	for i := 1; err != nil && i < c.Tries; i++ {
 		time.Sleep(s)
-		fmt.Printf("[%s] Running shell check, retry #%d\n", c.Name, i)
+		logs.Log(LOG_INFO, fmt.Sprintf("[%s] Running shell check, retry #%2d", c.Name, i))
 		out, err = c.execute(c.Shell, r)
 	}
 
@@ -194,6 +190,7 @@ func (c *Check) runShell(s time.Duration, r *regexp.Regexp) (subject string, msg
 }
 
 func (c *Check) fetch(url string, code int, r *regexp.Regexp) error {
+	logs.Log(LOG_DEBUG, fmt.Sprintf("[%s] Fetching url: %q", c.Name, url))
 	resp, err := http.Get(url)
 
 	defer func() {
@@ -235,6 +232,7 @@ func (c *Check) fetch(url string, code int, r *regexp.Regexp) error {
 }
 
 func (c *Check) execute(cmd string, r *regexp.Regexp) (out []byte, err error) {
+	logs.Log(LOG_DEBUG, fmt.Sprintf("[%s] Executing cmd %q", c.Name, cmd))
 	out, err = exec.Command(ShellPath, "-c", cmd).CombinedOutput()
 	if err == nil && r != nil && !r.Match(out) {
 		err = errors.New("Expected:\n" + c.Match + "\n\nGot:\n" + string(out))
@@ -246,12 +244,12 @@ func (c *Check) notify(subject string, message string) {
 	sendmail := exec.Command(cmdSendmail, "-t")
 	stdin, err := sendmail.StdinPipe()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] Error during sendmail pipe attachment: %s\n", c.Name, err.Error())
+		logs.Log(LOG_ERR, fmt.Sprintf("[%s] Error during sendmail pipe attachment: %s", c.Name, err.Error()))
 		return
 	}
 	err = sendmail.Start()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] Error starting cmd %s: %s\n", c.Name, cmdSendmail, err.Error())
+		logs.Log(LOG_ERR, fmt.Sprintf("[%s] Error starting cmd %s: %s", c.Name, cmdSendmail, err.Error()))
 		return
 	}
 
@@ -263,22 +261,23 @@ func (c *Check) notify(subject string, message string) {
 		"Message": message,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] Error generating mail template: %s\n", c.Name, err.Error())
+		logs.Log(LOG_ERR, fmt.Sprintf("[%s] Error generating mail template: %s", c.Name, err.Error()))
 		return
 	}
 
 	err = stdin.Close()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] Error closing pipe: %s\n", c.Name, err.Error())
+		logs.Log(LOG_ERR, fmt.Sprintf("[%s] Error closing pipe: %s", c.Name, err.Error()))
 	}
 
 	err = sendmail.Wait()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] Error sending notification: %s\n", c.Name, err.Error())
+		logs.Log(LOG_ERR, fmt.Sprintf("[%s] Error sending notification: %s", c.Name, err.Error()))
 	}
 }
 
 func (c *Check) alert(msg string, failed bool) {
+	logs.Log(LOG_DEBUG, fmt.Sprintf("[%s] Sending alert", c.Name))
 	var cmd string
 	if msg != "" {
 		cmd = fmt.Sprintf("%s %s %s %s", c.Alert, strconv.FormatBool(failed), strconv.Quote(c.Name), strconv.Quote(msg))
@@ -288,6 +287,6 @@ func (c *Check) alert(msg string, failed bool) {
 
 	out, err := exec.Command(ShellPath, "-c", cmd).CombinedOutput()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[%s] %s failed\n%s\n%s\n", c.Name, c.Alert, string(out), err.Error())
+		logs.Log(LOG_ERR, fmt.Sprintf("[%s] %s failed:\n\t%s\n\t%s", c.Name, c.Alert, string(out), err.Error()))
 	}
 }
