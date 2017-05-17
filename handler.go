@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -16,12 +17,12 @@ var modJS string
 var modCSS string
 
 // Construct the last modified string.
-func etag(ts time.Time) string {
-	return "W/\"" + strconv.FormatInt(ts.UnixNano(), 10) + "\""
+func etag() string {
+	return fmt.Sprintf(`W/"%10d"`, time.Now().UnixNano())
 }
 
 func init() {
-	started = etag(time.Now())
+	started = etag()
 	modified = started
 
 	cacheHTML, _ := AssetInfo("index.html")
@@ -37,7 +38,7 @@ func init() {
 // Serve the Web UI.
 func handleUI(w http.ResponseWriter, r *http.Request) {
 	h := w.Header()
-	h.Set("Server", "jsonmon")
+	h.Set("Server", AppName)
 	switch r.URL.Path {
 	case "/":
 		displayUI(w, r, "text/html", "index.html", &modHTML)
@@ -77,14 +78,14 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 // Display application version.
 func handleVersion(w http.ResponseWriter, r *http.Request) {
 	b, _ := json.Marshal(NewVersionPayload())
-	writeJSON(w, r, b, &started)
+	writeJSON(w, r, b, &modified)
 }
 
 // Output JSON.
 func writeJSON(w http.ResponseWriter, r *http.Request, result []byte, cache *string) {
 	var cached bool
 	h := w.Header()
-	h.Set("Server", "jsonmon")
+	h.Set("Server", AppName)
 	if cache != nil {
 		if r.Header.Get("If-None-Match") == *cache {
 			cached = true

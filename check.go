@@ -14,10 +14,16 @@ import (
 	"time"
 )
 
-const cmdSendmail = "/usr/sbin/sendmail"
+const (
+	cmdSendmail     = "/usr/sbin/sendmail"
+	defaultTries    = 1
+	defaultRepeat   = 30 // sec
+	defaultHttpCode = http.StatusOK
+)
+
 const mailTemplate = `To: {{.Notify}}
 Subject: {{.Subject}}
-X-Mailer: jsonmon
+X-Mailer: {{.AppName}}
 
 {{.Message}}
 
@@ -71,17 +77,17 @@ func (c *Check) Run() {
 
 	// Default timeout.
 	if c.Repeat == 0 {
-		c.Repeat = 30
+		c.Repeat = defaultRepeat
 	}
 
 	// Default to 1 attempt.
 	if c.Tries == 0 {
-		c.Tries = 1
+		c.Tries = defaultTries
 	}
 
 	// Default successful http return code
 	if c.Return == 0 {
-		c.Return = 200
+		c.Return = defaultHttpCode
 	}
 
 	r := time.Duration(c.Repeat) * time.Second
@@ -251,6 +257,7 @@ func (c *Check) notify(subject string, message string) {
 
 	t := template.Must(template.New("mail").Parse(mailTemplate))
 	err = t.Execute(stdin, map[string]string{
+		"AppName": AppName,
 		"Notify":  c.Notify,
 		"Subject": subject,
 		"Message": message,

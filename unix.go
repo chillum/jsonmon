@@ -15,7 +15,7 @@ const ShellPath string = "/bin/sh"
 var logs *syslog.Writer
 
 func logInit() (*syslog.Writer, error) {
-	return syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "jsonmon")
+	return syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, AppName)
 }
 
 func log(severity int, message string) {

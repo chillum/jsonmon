@@ -16,7 +16,7 @@ const ShellPath string = "sh"
 var logs *eventlog.Log
 
 func logInit() (*eventlog.Log, error) {
-	return eventlog.Open("jsonmon")
+	return eventlog.Open(AppName)
 }
 
 func log(severity int, message string) {
