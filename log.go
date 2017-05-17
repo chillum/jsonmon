@@ -23,7 +23,7 @@ const (
 const (
 	EnvLogLevel      = "LOG_LEVEL"
 	EnvLogFormat     = "LOG_FORMAT"
-	defaultLogFormat = "<%s>\t%s\n" // #1 severity, #2 msg
+	defaultLogFormat = "<%s>\t%s" // #1 severity, #2 msg
 )
 
 type Logger interface {
@@ -52,7 +52,7 @@ func init() {
 		if match == nil || len(match) != 2 {
 			fatal(ErrorArguments, "Wrong log format. Expected 2 string placeholders")
 		}
-		logFormat = format+"\n"
+		logFormat = format
 	}
 }
 
