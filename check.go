@@ -129,6 +129,30 @@ func (c *Check) Run() {
 	}
 }
 
+// Updates the check status concurrency safe to failed.
+// If there was no status change the len of the returned subject is zero.
+func (c *Check) MarkFailed() (subject string) {
+	c.m.Lock()
+	if !c.Failed {
+		c.Failed = true
+		subject = "Failed: " + c.Name
+	}
+	c.m.Unlock()
+	return subject
+}
+
+// Updates the check status concurrency safe to healthy.
+// If there was no status change the len of the returned subject is zero.
+func (c *Check) MarkHealthy() (subject string) {
+	c.m.Lock()
+	if c.Failed {
+		c.Failed = false
+		subject = "Fixed: " + c.Name
+	}
+	c.m.Unlock()
+	return subject
+}
+
 func (c *Check) runWeb(s time.Duration, r *regexp.Regexp) (subject string, msg string) {
 	logs.Log(LOG_INFO, fmt.Sprintf("[%s] Running web check", c.Name))
 
@@ -139,20 +163,12 @@ func (c *Check) runWeb(s time.Duration, r *regexp.Regexp) (subject string, msg s
 		err = c.fetch(c.Web, c.Return, r)
 	}
 
-	c.m.Lock()
 	if err != nil {
-		if !c.Failed {
-			c.Failed = true
-			msg = err.Error()
-			subject = "Failed: " + c.Name
-		}
+		msg = err.Error()
+		subject = c.MarkFailed()
 	} else {
-		if c.Failed {
-			c.Failed = false
-			subject = "Fixed: " + c.Name
-		}
+		subject = c.MarkHealthy()
 	}
-	c.m.Unlock()
 
 	return subject, msg
 }
@@ -171,20 +187,12 @@ func (c *Check) runShell(s time.Duration, r *regexp.Regexp) (subject string, msg
 		err = errors.New("Expected:\n" + c.Match + "\n\nGot:\n" + string(out))
 	}
 
-	c.m.Lock()
 	if err != nil {
-		if !c.Failed {
-			c.Failed = true
-			msg = string(out) + err.Error()
-			subject = "Failed: " + c.Name
-		}
+		msg = string(out) + err.Error()
+		subject = c.MarkFailed()
 	} else {
-		if c.Failed {
-			c.Failed = false
-			subject = "Fixed: " + c.Name
-		}
+		subject = c.MarkHealthy()
 	}
-	c.m.Unlock()
 
 	return subject, msg
 }
