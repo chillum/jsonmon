@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-	"time"
 	"sync"
+	"time"
 )
 
 func TestCheck_ConcurrencyReadWrite(t *testing.T) {
@@ -17,7 +17,7 @@ func TestCheck_ConcurrencyReadWrite(t *testing.T) {
 		failed := rnd.Intn(1) == 0
 		for _, check := range testChecks {
 			if failed {
-				check.MarkFailed()
+				check.MarkFailed("")
 			} else {
 				check.MarkHealthy()
 			}

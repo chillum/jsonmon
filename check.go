@@ -44,6 +44,7 @@ type Check struct {
 	Repeat      int            `json:"-"`
 	Sleep       int            `json:"-"`
 	Failed      bool           `json:"failed" yaml:"-"`
+	Error       string         `json:"error" yaml:"-"`
 	Since       string         `json:"since,omitempty" yaml:"-"`
 }
 
@@ -131,10 +132,11 @@ func (c *Check) Run() {
 
 // Updates the check status concurrency safe to failed.
 // If there was no status change the len of the returned subject is zero.
-func (c *Check) MarkFailed() (subject string) {
+func (c *Check) MarkFailed(errMsg string) (subject string) {
 	c.m.Lock()
 	if !c.Failed {
 		c.Failed = true
+		c.Error = errMsg
 		subject = "Failed: " + c.Name
 	}
 	c.m.Unlock()
@@ -147,6 +149,7 @@ func (c *Check) MarkHealthy() (subject string) {
 	c.m.Lock()
 	if c.Failed {
 		c.Failed = false
+		c.Error = ""
 		subject = "Fixed: " + c.Name
 	}
 	c.m.Unlock()
@@ -165,7 +168,7 @@ func (c *Check) runWeb(s time.Duration, r *regexp.Regexp) (subject string, msg s
 
 	if err != nil {
 		msg = err.Error()
-		subject = c.MarkFailed()
+		subject = c.MarkFailed(msg)
 	} else {
 		subject = c.MarkHealthy()
 	}
@@ -189,7 +192,7 @@ func (c *Check) runShell(s time.Duration, r *regexp.Regexp) (subject string, msg
 
 	if err != nil {
 		msg = string(out) + err.Error()
-		subject = c.MarkFailed()
+		subject = c.MarkFailed(msg)
 	} else {
 		subject = c.MarkHealthy()
 	}
