@@ -13,28 +13,47 @@ import (
 // We expect `sh` anywhere in %PATH% on Windows.
 const ShellPath string = "sh"
 
-var logs *eventlog.Log
-
-func logInit() (logwriter *eventlog.Log, err error) {
-	logwriter, err = eventlog.Open("jsonmon")
-	return
+type WindowsLogger struct {
+	eventLog *eventlog.Log
 }
 
-func log(severity int, message string) {
-	if *useSyslog == false {
-		fmt.Fprint(os.Stderr, "<", severity, ">", message, "\n")
+func init() {
+	var eventLogger *eventlog.Log
+	if syslogFlag {
+		var err error
+		eventLogger, err = eventlog.Open(AppName)
+		if err != nil {
+			fatal(ErrorIO, err.Error())
+		}
+	}
+	logs = &WindowsLogger{eventLogger}
+}
+
+func (l *WindowsLogger) Log(severity int, message string) {
+	if severity > logLevel {
+		return
+	}
+	if l.eventLog == nil {
+		msg := fmt.Sprintf(logFormat, ToLogLevel(severity), message)
+		if severity >= LOG_INFO {
+			fmt.Fprintln(os.Stdout, msg)
+		} else {
+			fmt.Fprintln(os.Stderr, msg)
+		}
 	} else {
 		switch severity {
-		case 2:
-			logs.Error(2, message)
-		case 3:
-			logs.Error(3, message)
-		case 4:
-			logs.Warning(4, message)
-		case 5:
-			logs.Info(5, message)
-		case 7:
-			logs.Info(7, message)
+		case LOG_CRIT:
+			fallthrough
+		case LOG_ERR:
+			l.eventLog.Error(uint32(LOG_ERR), message)
+		case LOG_WARNING:
+			l.eventLog.Warning(uint32(LOG_WARNING), message)
+		case LOG_NOTICE:
+			fallthrough
+		case LOG_INFO:
+			fallthrough
+		case LOG_DEBUG:
+			l.eventLog.Info(uint32(severity), message)
 		}
 	}
 }
