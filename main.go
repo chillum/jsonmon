@@ -33,7 +33,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.1.4"
+const Version = "3.1.5"
 
 // This one is for internal use.
 type ver struct {
@@ -273,10 +273,10 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			subject := "Fixed: " + *name
 			log(5, subject)
 			if check.Notify != "" {
-				notify(check, &subject, nil)
+				go notify(check, &subject, nil)
 			}
 			if check.Alert != "" {
-				alert(check, name, nil, false)
+				go alert(check, name, nil, false)
 			}
 		}
 	} else {
@@ -291,10 +291,10 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			subject := "Failed: " + *name
 			log(5, subject+"\n"+msg)
 			if check.Notify != "" {
-				notify(check, &subject, &msg)
+				go notify(check, &subject, &msg)
 			}
 			if check.Alert != "" {
-				alert(check, name, &msg, true)
+				go alert(check, name, &msg, true)
 			}
 		}
 	}
@@ -326,10 +326,10 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			subject := "Fixed: " + *name
 			log(5, subject)
 			if check.Notify != "" {
-				notify(check, &subject, nil)
+				go notify(check, &subject, nil)
 			}
 			if check.Alert != "" {
-				alert(check, name, nil, false)
+				go alert(check, name, nil, false)
 			}
 		}
 	} else {
@@ -344,10 +344,10 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			subject := "Failed: " + *name
 			log(5, subject+"\n"+msg)
 			if check.Notify != "" {
-				notify(check, &subject, &msg)
+				go notify(check, &subject, &msg)
 			}
 			if check.Alert != "" {
-				alert(check, name, &msg, true)
+				go alert(check, name, &msg, true)
 			}
 		}
 	}
