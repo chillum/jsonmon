@@ -15,7 +15,7 @@ html(ng-app='jsonmon')
         td
           a(ng-if='check.name !== undefined && check.web !== undefined' href='{{check.web}}' title='{{check.web}}')
             | {{check.name}}
-          div(ng-if='check.name === undefined && check.web !== undefined' href='{{check.web}}' title='{{check.web}}')
+          a(ng-if='check.name === undefined && check.web !== undefined' href='{{check.web}}' title='{{check.web}}')
             | {{check.web}}
           div(ng-if='check.name !== undefined && check.shell !== undefined' title='{{check.shell}}')
             | {{check.name}}

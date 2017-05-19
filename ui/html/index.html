@@ -14,8 +14,7 @@
         <th>Status</th>
       </tr>
       <tr ng-repeat="check in json">
-        <td><a ng-if="check.name !== undefined &amp;&amp; check.web !== undefined" href="{{check.web}}" title="{{check.web}}">{{check.name}}</a>
-          <div ng-if="check.name === undefined &amp;&amp; check.web !== undefined" href="{{check.web}}" title="{{check.web}}">{{check.web}}</div>
+        <td><a ng-if="check.name !== undefined &amp;&amp; check.web !== undefined" href="{{check.web}}" title="{{check.web}}">{{check.name}}</a><a ng-if="check.name === undefined &amp;&amp; check.web !== undefined" href="{{check.web}}" title="{{check.web}}">{{check.web}}</a>
           <div ng-if="check.name !== undefined &amp;&amp; check.shell !== undefined" title="{{check.shell}}">{{check.name}}</div>
           <div ng-if="check.name === undefined &amp;&amp; check.shell !== undefined" title="{{check.shell}}">{{check.shell}}</div>
         </td>

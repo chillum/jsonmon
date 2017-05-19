@@ -33,7 +33,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.1.5"
+const Version = "3.1.6"
 
 // This one is for internal use.
 type ver struct {
