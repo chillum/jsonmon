@@ -27,7 +27,7 @@ type Check struct {
 }
 
 // Background worker.
-func worker(check *Check) {
+func (check *Check) worker() {
 	if check.Shell == "" && check.Web == "" {
 		log(4, "Ignoring entry with no either Web or shell check")
 		mutex.Lock()
@@ -67,7 +67,7 @@ func worker(check *Check) {
 			mutex.Unlock()
 		}
 		for {
-			web(check, &name, &sleep)
+			check.web(&name, &sleep)
 			time.Sleep(repeat)
 		}
 	} else {
@@ -77,14 +77,14 @@ func worker(check *Check) {
 			name = check.Shell
 		}
 		for {
-			shell(check, &name, &sleep)
+			check.shell(&name, &sleep)
 			time.Sleep(repeat)
 		}
 	}
 }
 
 // Shell worker.
-func shell(check *Check, name *string, sleep *time.Duration) {
+func (check *Check) shell(name *string, sleep *time.Duration) {
 	// Execute with shell in N attemps.
 	var out []byte
 	var err error
@@ -117,10 +117,10 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			subject := "Fixed: " + *name
 			log(5, subject)
 			if check.Notify != "" {
-				go notify(check, &subject, nil)
+				go notify(&check.Notify, &subject, nil)
 			}
 			if check.Alert != "" {
-				go alert(check, name, nil, false)
+				go alert(&check.Alert, name, nil, false)
 			}
 		}
 	} else {
@@ -135,21 +135,21 @@ func shell(check *Check, name *string, sleep *time.Duration) {
 			subject := "Failed: " + *name
 			log(5, subject+"\n"+msg)
 			if check.Notify != "" {
-				go notify(check, &subject, &msg)
+				go notify(&check.Notify, &subject, &msg)
 			}
 			if check.Alert != "" {
-				go alert(check, name, &msg, true)
+				go alert(&check.Alert, name, &msg, true)
 			}
 		}
 	}
 }
 
 // Web worker.
-func web(check *Check, name *string, sleep *time.Duration) {
+func (check *Check) web(name *string, sleep *time.Duration) {
 	// Get the URL in N attempts.
 	var err error
 	for i := 0; i < check.Tries; {
-		err = fetch(check.Web, check.Match, check.Return)
+		err = check.fetch()
 		if err == nil {
 			break
 		}
@@ -170,10 +170,10 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			subject := "Fixed: " + *name
 			log(5, subject)
 			if check.Notify != "" {
-				go notify(check, &subject, nil)
+				go notify(&check.Notify, &subject, nil)
 			}
 			if check.Alert != "" {
-				go alert(check, name, nil, false)
+				go alert(&check.Alert, name, nil, false)
 			}
 		}
 	} else {
@@ -188,30 +188,30 @@ func web(check *Check, name *string, sleep *time.Duration) {
 			subject := "Failed: " + *name
 			log(5, subject+"\n"+msg)
 			if check.Notify != "" {
-				go notify(check, &subject, &msg)
+				go notify(&check.Notify, &subject, &msg)
 			}
 			if check.Alert != "" {
-				go alert(check, name, &msg, true)
+				go alert(&check.Alert, name, &msg, true)
 			}
 		}
 	}
 }
 
 // The actual HTTP GET.
-func fetch(url string, match string, code int) error {
-	resp, err := http.Get(url)
+func (check *Check) fetch() error {
+	resp, err := http.Get(check.Web)
 	if err == nil {
-		if resp.StatusCode != code { // Check status code.
-			err = errors.New(url + " returned " + strconv.Itoa(resp.StatusCode))
+		if resp.StatusCode != check.Return { // Check status code.
+			err = errors.New(check.Web + " returned " + strconv.Itoa(resp.StatusCode))
 		} else { // Match regexp.
-			if resp != nil && match != "" {
+			if resp != nil && check.Match != "" {
 				var regex *regexp.Regexp
-				regex, err = regexp.Compile(match)
+				regex, err = regexp.Compile(check.Match)
 				if err == nil {
 					var body []byte
 					body, _ = ioutil.ReadAll(resp.Body)
 					if !regex.Match(body) {
-						err = errors.New("Expected:\n" + match + "\n\nGot:\n" + string(body))
+						err = errors.New("Expected:\n" + check.Match + "\n\nGot:\n" + string(body))
 					}
 				}
 			}

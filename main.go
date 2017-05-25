@@ -119,7 +119,7 @@ func main() {
 	modified = started
 	mutex = &sync.RWMutex{}
 	for i := range checks {
-		go worker(&checks[i])
+		go checks[i].worker()
 	}
 	cacheHTML, _ := AssetInfo("index.html")
 	modHTML = cacheHTML.ModTime().UTC().Format(http.TimeFormat)

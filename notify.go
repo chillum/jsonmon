@@ -8,12 +8,12 @@ import (
 )
 
 // Mail notifications.
-func notify(check *Check, subject *string, message *string) {
+func notify(to *string, subject *string, message *string) {
 	// Make the message.
 	var msg bytes.Buffer
 	var err error
 	msg.WriteString("To: ")
-	msg.WriteString(check.Notify)
+	msg.WriteString(*to)
 	msg.WriteString("\nSubject: ")
 	msg.WriteString(*subject)
 	msg.WriteString("\nX-Mailer: jsonmon\n\n")
@@ -33,15 +33,15 @@ func notify(check *Check, subject *string, message *string) {
 }
 
 // Executes callback. Passes args: true/false, check's name, message.
-func alert(check *Check, name *string, msg *string, failed bool) {
+func alert(cmd *string, name *string, msg *string, failed bool) {
 	var out []byte
 	var err error
 	if msg != nil {
-		out, err = exec.Command(check.Alert, strconv.FormatBool(failed), *name, *msg).CombinedOutput()
+		out, err = exec.Command(*cmd, strconv.FormatBool(failed), *name, *msg).CombinedOutput()
 	} else {
-		out, err = exec.Command(check.Alert, strconv.FormatBool(failed), *name).CombinedOutput()
+		out, err = exec.Command(*cmd, strconv.FormatBool(failed), *name).CombinedOutput()
 	}
 	if err != nil {
-		log(3, check.Alert+" failed\n"+string(out)+err.Error())
+		log(3, *cmd+" failed\n"+string(out)+err.Error())
 	}
 }
