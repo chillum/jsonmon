@@ -10,5 +10,5 @@ WORKDIR /etc/jsonmon
 ENV HOST=[::]
 COPY jsonmon /usr/bin
 
-CMD ["/usr/bin/jsonmon", "config.yml"]
+CMD ["jsonmon", "config.yml"]
 EXPOSE 3000
