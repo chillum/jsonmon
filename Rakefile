@@ -10,5 +10,5 @@ end
 desc 'Build Docker image'
 task :docker do
   sh 'GOOS=linux GOARCH=amd64 go build'
-  sh 'docker build -t jsonmon .'
+  sh 'docker build -t chillum/jsonmon .'
 end
