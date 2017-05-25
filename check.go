@@ -26,8 +26,8 @@ type Check struct {
 	Since  string `json:"since,omitempty" yaml:"-"`
 }
 
-// Background worker.
-func (check *Check) worker() {
+// Run the check's loop.
+func (check *Check) Run() {
 	if check.Shell == "" && check.Web == "" {
 		log(4, "Ignoring entry with no either Web or shell check")
 		mutex.Lock()
@@ -59,7 +59,7 @@ func (check *Check) worker() {
 		if check.Name != "" { // Set check's display name.
 			name = check.Name
 		} else {
-			name = check.Web
+			name = check.Web // TODO: strip http(s):// and basic auth
 		}
 		if check.Return == 0 { // Successful HTTP return code is 200.
 			mutex.Lock()

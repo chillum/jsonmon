@@ -27,7 +27,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.1.7b"
+const Version = "3.1.7"
 
 // This one is for internal use.
 type ver struct {
@@ -81,11 +81,13 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Help message if no arguments.
 	args := flag.Args()
 	if len(args) != 1 {
 		flag.Usage()
 	}
 
+	// Initialize system log.
 	if *useSyslog == true {
 		logs, err = logInit()
 		if err != nil {
@@ -119,7 +121,7 @@ func main() {
 	modified = started
 	mutex = &sync.RWMutex{}
 	for i := range checks {
-		go checks[i].worker()
+		go checks[i].Run()
 	}
 	cacheHTML, _ := AssetInfo("index.html")
 	modHTML = cacheHTML.ModTime().UTC().Format(http.TimeFormat)
