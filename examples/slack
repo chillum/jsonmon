@@ -19,4 +19,4 @@ case $1 in
         ;;
 esac
 
-curl -H "Content-Type:application/json" -d "$data" https://hooks.slack.com/services/INTEGRATION_PATH
+curl -sSH "Content-Type:application/json" -d "$data" https://hooks.slack.com/services/INTEGRATION_PATH
