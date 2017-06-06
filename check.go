@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os/exec"
@@ -12,18 +14,20 @@ import (
 
 // Check details.
 type Check struct {
-	Name   string `json:"name,omitempty"`
-	Web    string `json:"web,omitempty"`
-	Shell  string `json:"shell,omitempty"`
-	Match  string `json:"-"`
-	Return int    `json:"-"`
-	Notify string `json:"-"`
-	Alert  string `json:"-"`
-	Tries  int    `json:"-"`
-	Repeat int    `json:"-"`
-	Sleep  int    `json:"-"`
-	Failed bool   `json:"failed" yaml:"-"`
-	Since  string `json:"since,omitempty" yaml:"-"`
+	Name    string            `json:"name,omitempty"`
+	Web     string            `json:"web,omitempty"`
+	Headers map[string]string `json:"headers,omitempty"`
+	Body    string            `json:"body,omitempty"`
+	Shell   string            `json:"shell,omitempty"`
+	Match   string            `json:"-"`
+	Return  int               `json:"-"`
+	Notify  string            `json:"-"`
+	Alert   string            `json:"-"`
+	Tries   int               `json:"-"`
+	Repeat  int               `json:"-"`
+	Sleep   int               `json:"-"`
+	Failed  bool              `json:"failed" yaml:"-"`
+	Since   string            `json:"since,omitempty" yaml:"-"`
 }
 
 // Run the check's loop.
@@ -199,7 +203,27 @@ func (check *Check) web(name *string, sleep *time.Duration) {
 
 // The actual HTTP GET.
 func (check *Check) fetch() error {
-	resp, err := http.Get(check.Web)
+	var resp *http.Response
+	var err error
+	method := "GET"
+	if len(check.Headers) > 0 {
+		client := http.Client{}
+		var body io.Reader
+		if len(check.Body) > 0 {
+			method = "POST"
+			body = bytes.NewReader([]byte(check.Body))
+		}
+		req, err := http.NewRequest(method, check.Web, body)
+		if err != nil {
+			return err
+		}
+		for k, v := range check.Headers {
+			req.Header.Add(k, v)
+		}
+		resp, err = client.Do(req)
+	} else {
+		resp, err = http.Get(check.Web)
+	}
 	if err == nil {
 		if resp.StatusCode != check.Return { // Check status code.
 			err = errors.New(check.Web + " returned " + strconv.Itoa(resp.StatusCode))
