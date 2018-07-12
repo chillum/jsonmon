@@ -23,5 +23,5 @@ html(ng-app='jsonmon')
             | {{check.shell}}
         td
           div(ng-switch on='check.failed')
-            .ok(ng-switch-when='false' title='{{check.since}}') ok
-            .fail(ng-switch-when='true' title='{{check.since}}') fail
+            .ok(ng-switch-when='false' title="{{check.since | date: 'medium'}}") ok
+            .fail(ng-switch-when='true' title="{{check.since | date: 'medium'}}") fail

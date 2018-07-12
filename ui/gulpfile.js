@@ -10,8 +10,8 @@ gulp.task('default', function() {
     .pipe(gulp.dest('html'));
 });
 
-gulp.task('bower', function() {
-  return gulp.src('bower_components/angular/angular.min.js')
+gulp.task('angular', function() {
+  return gulp.src('node_modules/angular/angular.min.js')
     .pipe(gulp.dest('html'));
 });
 

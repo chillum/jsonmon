@@ -2,11 +2,10 @@
 
 `gulp` command makes `html/index.html` out of `index.pug`. To set it up:
 
-* Install [Node.js](https://nodejs.org/en/download/)
+* Install [Node.js](https://nodejs.org/en/download/),
+  [Yarn](https://yarnpkg.com/en/docs/install)
   and [gulp](https://github.com/gulpjs/gulp/blob/master/docs/getting-started.md)
-* Run `npm install`
+* Run `yarn`
 
-To re-new AngularJS:
-* Install [Bower](https://bower.io/#install-bower)
-* Run `bower install`
-* Run `gulp bower`
+To update AngularJS:
+* Run `gulp angular`
