@@ -5,5 +5,5 @@ platforms:
     arch: amd64
     zip:  mac
   - name: windows
-    arch: amd64
+    arch: 386
     zip:  windows
