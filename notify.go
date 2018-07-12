@@ -1,16 +1,16 @@
 package main
 
 import (
-	"bytes"
 	"io"
 	"os/exec"
 	"strconv"
+	"strings"
 )
 
 // Mail notifications.
 func notify(to *string, subject *string, message *string) {
 	// Make the message.
-	var msg bytes.Buffer
+	var msg strings.Builder
 	var err error
 	msg.WriteString("To: ")
 	msg.WriteString(*to)
