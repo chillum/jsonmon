@@ -10,7 +10,7 @@ App.config(['$compileProvider', function($compileProvider) {
 function getJson($rootScope, $scope, $http) {
   $http.get('/status')
     .then(function(res){
-      if ($scope.json !== res.data) {
+      if (!angular.equals($scope.json, res.data)) {
         $scope.json = res.data;
         // Page title should include errors number.
         var errors = res.data.filter(function(check) {

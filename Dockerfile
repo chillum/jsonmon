@@ -1,7 +1,6 @@
 FROM alpine
 
-LABEL Name=jsonmon \
-      Version=3.1.9
+LABEL Name=jsonmon Version=3.1.10
 
 RUN ["apk", "--no-cache", "add", "curl"]
 
