@@ -1,7 +1,5 @@
 FROM alpine
 
-LABEL Name=jsonmon Version=3.1.10
-
 RUN ["apk", "--no-cache", "add", "curl"]
 
 VOLUME ["/etc/jsonmon"]
