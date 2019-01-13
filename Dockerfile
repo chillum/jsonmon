@@ -7,7 +7,7 @@ RUN ["apk", "--no-cache", "add", "curl"]
 VOLUME ["/etc/jsonmon"]
 WORKDIR /etc/jsonmon
 ENV HOST=[::]
-COPY jsonmon /usr/bin
+COPY jsonmon /usr/local/bin/
 
 USER nobody
 CMD ["jsonmon", "config.yml"]
