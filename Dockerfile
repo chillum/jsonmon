@@ -1,6 +1,6 @@
 FROM alpine
 
-RUN ["apk", "--no-cache", "add", "curl"]
+RUN apk --no-cache add curl && chmod u+s /bin/ping
 
 VOLUME ["/etc/jsonmon"]
 WORKDIR /etc/jsonmon
