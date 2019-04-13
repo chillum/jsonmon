@@ -1,6 +1,6 @@
 require 'go4rake'
 
-task :default => :zip
+task :default => [:zip, :docker]
 
 desc 'Update bundled Web UI (run this after modifying the UI)'
 task :ui do
@@ -9,6 +9,9 @@ end
 
 desc 'Build Docker image'
 task :docker do
-  sh 'GOOS=linux GOARCH=amd64 go build'
+  ENV['GOOS']   = 'linux'
+  ENV['GOARCH'] = 'amd64'
+  sh 'go build'
+
   sh 'docker build -t chillum/jsonmon .'
 end
