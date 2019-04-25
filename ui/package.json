@@ -6,9 +6,8 @@
     "type": "git",
     "url": "https://github.com/chillum/jsonmon"
   },
-  "devDependencies": {
+  "dependencies": {
     "angular": "^1.7.2",
-    "del": "~4",
     "gulp": "~4",
     "gulp-pug": "~4"
   }

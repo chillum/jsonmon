@@ -6,6 +6,3 @@
   [Yarn](https://yarnpkg.com/en/docs/install)
   and [gulp](https://github.com/gulpjs/gulp/blob/master/docs/getting-started.md)
 * Run `yarn`
-
-To update AngularJS:
-* Run `gulp angular`
