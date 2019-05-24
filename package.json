@@ -1,5 +1,5 @@
 {
-  "name": "jsonmon-ui",
+  "name": "jsonmon",
   "description": "jsonmon Web UI",
   "license": "Apache-2.0",
   "repository": {
@@ -7,8 +7,6 @@
     "url": "https://github.com/chillum/jsonmon"
   },
   "dependencies": {
-    "angular": "^1.7.2",
-    "gulp": "~4",
-    "gulp-pug": "~4"
+    "angular": "^1.7.2"
   }
 }

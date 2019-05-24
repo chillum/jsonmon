@@ -2,5 +2,4 @@ Gemfile.lock
 jsonmon
 jsonmon.test
 node_modules/
-bower_components/
-npm-debug.log
+yarn-error.log

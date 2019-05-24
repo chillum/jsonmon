@@ -2,9 +2,14 @@ require 'go4rake'
 
 task :default => [:zip, :docker]
 
-desc 'Update bundled Web UI (run this after modifying the UI)'
-task :ui do
-  sh 'go-bindata -nocompress -nomemcopy -prefix ui/html ui/html'
+desc 'Update AngularJS from node_modules'
+task :angular do
+  FileUtils.cp 'node_modules/angular/angular.min.js', 'ui/', preserve: true, verbose: true
+end
+
+desc 'Update bundled Web UI (run this after modifying it)'
+task :bindata do
+  sh 'go-bindata -nocompress -nomemcopy -mode 0644 -prefix ui ui'
 end
 
 desc 'Build Docker image'
