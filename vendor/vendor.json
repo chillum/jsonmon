@@ -3,28 +3,28 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "uNFTv8VHGzOmLM2HH4cisGMSXu4=",
+			"checksumSHA1": "TUmY7C4uB1w06lYq0qRF3VEJN58=",
 			"path": "golang.org/x/sys/windows",
-			"revision": "7fc4e5ec1444df20dd195ae7c3bbfcd7114d3faa",
-			"revisionTime": "2019-06-06T17:29:06Z"
+			"revision": "bd437916bb0eb726b873ee8e9b2dcf212d32e2fd",
+			"revisionTime": "2019-11-20T15:35:20Z"
 		},
 		{
-			"checksumSHA1": "FCBHX83YaM1LmNHtSM30BKmbJQY=",
+			"checksumSHA1": "QkGcmV/rr56ZUKi6E7mdevKUE0g=",
 			"path": "golang.org/x/sys/windows/registry",
-			"revision": "7fc4e5ec1444df20dd195ae7c3bbfcd7114d3faa",
-			"revisionTime": "2019-06-06T17:29:06Z"
+			"revision": "bd437916bb0eb726b873ee8e9b2dcf212d32e2fd",
+			"revisionTime": "2019-11-20T15:35:20Z"
 		},
 		{
 			"checksumSHA1": "uVlUSSKplihZG7N+QJ6fzDZ4Kh8=",
 			"path": "golang.org/x/sys/windows/svc/eventlog",
-			"revision": "7fc4e5ec1444df20dd195ae7c3bbfcd7114d3faa",
-			"revisionTime": "2019-06-06T17:29:06Z"
+			"revision": "bd437916bb0eb726b873ee8e9b2dcf212d32e2fd",
+			"revisionTime": "2019-11-20T15:35:20Z"
 		},
 		{
-			"checksumSHA1": "QqDq2x8XOU7IoOR98Cx1eiV5QY8=",
+			"checksumSHA1": "mspriBK28mrdRiQNHoThnYEFaeQ=",
 			"path": "gopkg.in/yaml.v2",
-			"revision": "51d6538a90f86fe93ac480b35f37b2be17fef232",
-			"revisionTime": "2018-11-15T11:05:04Z"
+			"revision": "1f64d6156d11335c3f22d9330b0ad14fc1e789ce",
+			"revisionTime": "2019-11-19T21:27:36Z"
 		}
 	],
 	"rootPath": "github.com/chillum/jsonmon"
