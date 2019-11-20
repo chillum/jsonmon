@@ -7,6 +7,6 @@
     "url": "https://github.com/chillum/jsonmon"
   },
   "dependencies": {
-    "angular": "^1.7.2"
+    "angular": "^1.7.9"
   }
 }
