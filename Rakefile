@@ -1,4 +1,5 @@
 require 'go4rake'
+ENV['GOARM'] = '7'
 
 task :default => [:zip, :docker]
 
