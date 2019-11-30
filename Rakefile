@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 require 'go4rake'
 ENV['GOARM'] = '7'
 
-task :default => [:zip, :docker]
+task default: %i[zip docker]
 
 desc 'Update AngularJS from node_modules'
 task :angular do
