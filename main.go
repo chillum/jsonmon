@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
 	"runtime"
 	"sync"
 	"syscall"
@@ -27,7 +26,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.1.12"
+const Version = "3.1.13"
 
 // This one is for internal use.
 type ver struct {
@@ -61,8 +60,8 @@ func main() {
 	useSyslog = flag.Bool("syslog", false, "")
 	flag.Usage = func() {
 		fmt.Fprint(os.Stderr,
-			"Usage: ", path.Base(os.Args[0]), " [-syslog] config.yml\n",
-			"       ", path.Base(os.Args[0]), " -version\n",
+			"Usage: jsonmon [-syslog] config.yml\n",
+			"       jsonmon -version\n",
 			"----------------------------------------------\n",
 			"Docs:  https://github.com/chillum/jsonmon/wiki\n")
 		os.Exit(1)

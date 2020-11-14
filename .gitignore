@@ -1,5 +1,6 @@
+/jsonmon
+/jsonmon.test
+/jsonmon.exe
 Gemfile.lock
-jsonmon
-jsonmon.test
 node_modules/
 yarn-error.log
