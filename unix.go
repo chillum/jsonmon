@@ -1,4 +1,4 @@
-// +build !windows
+//go:build !windows
 
 package main
 
@@ -20,7 +20,7 @@ func logInit() (logwriter *syslog.Writer, err error) {
 }
 
 func log(severity int, message string) {
-	if *useSyslog == false {
+	if !*useSyslog {
 		fmt.Fprint(os.Stderr, "<", severity, ">", message, "\n")
 	} else {
 		switch severity {

@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os/exec"
 	"regexp"
@@ -209,7 +209,7 @@ func (check *Check) fetch() error {
 				regex, err = regexp.Compile(check.Match)
 				if err == nil {
 					var body []byte
-					body, _ = ioutil.ReadAll(resp.Body)
+					body, _ = io.ReadAll(resp.Body)
 					if !regex.Match(body) {
 						err = errors.New("Expected:\n" + check.Match + "\n\nGot:\n" + string(body))
 					}

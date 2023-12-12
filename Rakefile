@@ -21,5 +21,5 @@ task :docker do
   ENV['GOARCH'] = 'amd64'
   sh 'go build'
 
-  sh 'docker build -t chillum/jsonmon .'
+  sh 'docker build --platform linux/amd64 -t chillum/jsonmon .'
 end

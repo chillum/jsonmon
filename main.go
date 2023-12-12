@@ -2,10 +2,13 @@
 Quick and simple monitoring system
 
 Usage:
-  jsonmon [-syslog] config.yml
-  jsonmon -version
 
-Docs: https://github.com/chillum/jsonmon/wiki
+	jsonmon [-syslog] config.yml
+	jsonmon -version
+
+Docs:
+
+	https://github.com/chillum/jsonmon/wiki
 */
 package main
 
@@ -13,7 +16,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,7 +28,7 @@ import (
 )
 
 // Version is the application version.
-const Version = "3.1.14"
+const Version = "3.1.15"
 
 // This one is for internal use.
 type ver struct {
@@ -87,7 +89,7 @@ func main() {
 	}
 
 	// Initialize system log.
-	if *useSyslog == true {
+	if *useSyslog {
 		logs, err = logInit()
 		if err != nil {
 			*useSyslog = false
@@ -96,7 +98,7 @@ func main() {
 	}
 
 	// Parse the config file or exit with error.
-	config, err := ioutil.ReadFile(args[0])
+	config, err := os.ReadFile(args[0])
 	if err != nil {
 		log(2, err.Error())
 		os.Exit(3)

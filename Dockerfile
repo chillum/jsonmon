@@ -1,4 +1,4 @@
-FROM alpine
+FROM --platform=linux/amd64 alpine
 
 RUN apk --no-cache add curl && chmod u+s /bin/ping
 
