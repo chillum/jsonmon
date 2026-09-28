@@ -24,11 +24,11 @@ import (
 	"syscall"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	"github.com/goccy/go-yaml"
 )
 
 // Version is the application version.
-const Version = "3.1.15"
+const Version = "3.1.16"
 
 // This one is for internal use.
 type ver struct {
